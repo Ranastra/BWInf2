@@ -12,7 +12,7 @@ def t(n, li:list[list[int]]):
                     neuli.append(nsli)
         return t(n, neuli)
 
-a = t(4,[[]])
+# a = t(4,[[]])
 # print(a)
 
 b = [1,2,3,4,5]
@@ -31,6 +31,7 @@ def check(li:list[int]):
 
 def pwue(li:list[int]) -> int:
     l = []
+    if check(li): return 0
     for i in range(len(li)):
         a = wenden(i, li)
         if check(a): return 1
@@ -39,11 +40,16 @@ def pwue(li:list[int]) -> int:
     return 1 + min([pwue(a) for a in l])
             
 
-def alle(li:list[list[int]]):
+def alle(li:list[list[int]], a=0):
+    breakers = []
     for l in li:
         n = pwue(l)
-        if n == 5:
-            print(l)
+        a = max(a, n)
+        if a == n:
+            breakers.append((l, n))
+    breakers.sort()
+    for br in breakers:
+        if br[1] == a: print(br, ",")
 
 
 def num(li:list[list[int]]):
@@ -53,38 +59,5 @@ def num(li:list[list[int]]):
     return 
 
 #alle(t(4,[[]]))
-alle(t(8,[[]]))
-breaker = [8,5,2,7,4,1,6,3]
+alle(t(9,[[]]))
 
-"""
-[8, 5, 2, 7, 4, 1, 6, 3]
-[7, 5, 2, 8, 4, 1, 6, 3]
-[8, 5, 1, 7, 4, 2, 6, 3]
-[7, 5, 1, 8, 4, 2, 6, 3]
-[8, 5, 2, 6, 4, 1, 7, 3]
-[6, 5, 2, 8, 4, 1, 7, 3]
-[8, 5, 1, 6, 4, 2, 7, 3]
-[6, 5, 1, 8, 4, 2, 7, 3]
-[7, 5, 2, 6, 4, 1, 8, 3]
-[6, 5, 2, 7, 4, 1, 8, 3]
-[7, 5, 1, 6, 4, 2, 8, 3]
-[6, 5, 1, 7, 4, 2, 8, 3]
-[8, 4, 2, 7, 3, 6, 1, 5]
-[7, 4, 2, 8, 3, 6, 1, 5]
-[8, 4, 2, 6, 3, 7, 1, 5]
-[6, 4, 2, 8, 3, 7, 1, 5]
-[7, 4, 2, 6, 3, 8, 1, 5]
-[6, 4, 2, 7, 3, 8, 1, 5]
-[8, 4, 1, 7, 3, 6, 2, 5]
-[7, 4, 1, 8, 3, 6, 2, 5]
-[8, 4, 1, 6, 3, 7, 2, 5]
-[6, 4, 1, 8, 3, 7, 2, 5]
-[7, 4, 1, 6, 3, 8, 2, 5]
-[6, 4, 1, 7, 3, 8, 2, 5]
-[8, 4, 1, 7, 2, 6, 3, 5]
-[7, 4, 1, 8, 2, 6, 3, 5]
-[8, 4, 1, 6, 2, 7, 3, 5]
-[6, 4, 1, 8, 2, 7, 3, 5]
-[7, 4, 1, 6, 2, 8, 3, 5]
-[6, 4, 1, 7, 2, 8, 3, 5]
-"""
