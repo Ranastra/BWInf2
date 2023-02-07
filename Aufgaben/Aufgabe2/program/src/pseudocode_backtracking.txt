@@ -1,0 +1,76 @@
+// pseudocode backtracking mit Stack :3
+
+Stack stack = []
+HashMap current_map = [(n1,n2)...]
+bool step_backward = false
+int x=n3, y=n4, z=n5
+state = 0
+
+while current_map is not empty:
+    if step_backward:
+        order(x,y,z)
+        if stack is empty: break
+        state = stack.pop()
+        slice = back_backtrack(state, &mut x, &mut y, &mut z)
+        current_map[&slice]++
+        if state == 3 {continue}
+        else {step_backward=false}
+
+    order(x,y,z)
+
+    arr = [[x,y] in current_map, [x,z] in current_map, [y,z] in current_map]
+
+    nums = [&x,&y,&z]
+    if state == 0:
+        if !arr[0]:
+            if !arr[1]:
+                if !arr[2]:
+                    step_backward = true
+                    continue
+                else:
+                    stack.push(3)
+                    x++
+                    current_map[[y,z]]--
+            else:
+                stack.push(2)
+                y++
+                current_map[[x,z]]--
+        else:
+            stack.push(1)
+            z++
+            current_map[[x,y]]--
+    else if state == 1:
+        if !arr[1]:
+            if !arr[2]:
+                step_backward = true
+                continue
+            else:
+                stack.push(3)
+                x++
+                current_map[[y,z]]--
+        else:
+            stack.push(2)
+            y++
+            current_map[[x,z]]--
+    else: // state == 2
+        if !arr[2]:
+            step_backward = true
+            continue
+        else:
+            stack.push(3)
+            x++
+            current_map[[y,z]]--
+        
+
+fn back_backtrack(state: i32, x:&mut i32, y:&mut i32, z:&mut i32) -> [i32;2]{
+    if state == 1 {
+        *z -=1;
+        [*x,*y]
+    } else if state == 2 {
+        *y -=1;
+        [*x,*z]
+    } else {
+        *x -=1;
+        [*y,*z]
+    }
+}
