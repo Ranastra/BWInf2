@@ -6,11 +6,11 @@ use std::env;
 use std::io::Write;
 
 const DISPLAY_MODE:bool = false;
-const PRINT_SOLUTION:bool = true;
+const PRINT_SOLUTION:bool = false;
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
-    for i in 4..5 {
+    for i in 1..8 {
         let (lowest, all_slices) = read_input(i);
         if DISPLAY_MODE {println!("\nTest {}", i)}
         solve(lowest, all_slices, i);
@@ -52,20 +52,30 @@ fn output(mut stack:Vec<i32>, start:[i32;2], lowest:i32, mut x:i32, mut y:i32, m
         order(&mut x, &mut y, &mut z);
         if state == 1 {
             z -=1;
-            println!("{},{}", x, y);
-            let s: &[u8] = format!("{}, {}", x.to_string(), y.to_string()).as_bytes();
-            file.write_all(s);
+            if PRINT_SOLUTION {println!("{},{}", x, y);}
+            let str: String = format!("{}, {}\n", x.to_string(), y.to_string());
+            let s: &[u8] = str.as_bytes();
+            file.write_all(s).unwrap();
         } else if state == 2 {
             y -=1;
-            println!("{},{}", x, z);
+            if PRINT_SOLUTION {println!("{},{}", x, z);}
+            let str: String = format!("{}, {}\n", x.to_string(), z.to_string());
+            let s: &[u8] = str.as_bytes();
+            file.write_all(s).unwrap();
         } else { // state == 3
             x -=1;
-            println!("{},{}", y, z);
+            if PRINT_SOLUTION {println!("{},{}", y, z);}
+            let str: String = format!("{}, {}\n", y.to_string(), z.to_string());
+            let s: &[u8] = str.as_bytes();
+            file.write_all(s).unwrap();
         }
     }
     order(&mut x, &mut y, &mut z);
     for _ in 0..lowest {
-        println!("{},{}", start[0], start[1]);
+        if PRINT_SOLUTION {println!("{},{}", start[0], start[1]);}
+        let str: String = format!("{}, {}\n", start[0].to_string(), start[1].to_string());
+            let s: &[u8] = str.as_bytes();
+            file.write_all(s).unwrap();
     }
 }
 
