@@ -3,15 +3,17 @@ use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::env;
+use std::io::Write;
 
 const DISPLAY_MODE:bool = false;
+const PRINT_SOLUTION:bool = true;
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
-    for i in 7..8 {
+    for i in 4..5 {
         let (lowest, all_slices) = read_input(i);
         if DISPLAY_MODE {println!("\nTest {}", i)}
-        solve(lowest, all_slices);
+        solve(lowest, all_slices, i);
     }
     // let mut x = 3;
     // let mut y = 2;
@@ -41,8 +43,33 @@ fn order(x:&mut i32, y:&mut i32, z:&mut i32) {
     }
 }
 
+fn output(mut stack:Vec<i32>, start:[i32;2], lowest:i32, mut x:i32, mut y:i32, mut z:i32, test_number:i32) {
+    let mut state;
+    let s = format!("../output/test{}.txt", test_number.to_string());
+    let mut file = File::create(s).unwrap();
+    while !stack.is_empty() {
+        state = stack.pop().unwrap();
+        order(&mut x, &mut y, &mut z);
+        if state == 1 {
+            z -=1;
+            println!("{},{}", x, y);
+            let s: &[u8] = format!("{}, {}", x.to_string(), y.to_string()).as_bytes();
+            file.write_all(s);
+        } else if state == 2 {
+            y -=1;
+            println!("{},{}", x, z);
+        } else { // state == 3
+            x -=1;
+            println!("{},{}", y, z);
+        }
+    }
+    order(&mut x, &mut y, &mut z);
+    for _ in 0..lowest {
+        println!("{},{}", start[0], start[1]);
+    }
+}
 
-fn solve(lowest:[i32;2], all_slices:HashMap::<[i32;2], i32>) {
+fn solve(lowest:[i32;2], all_slices:HashMap::<[i32;2], i32>, test_number:i32) {
     // println!("{}", n);
     // println!("{}, {}", lowest[0], lowest[1]);
     let mut start_slices: Vec<[i32;2]> = Vec::new();
@@ -59,7 +86,8 @@ fn solve(lowest:[i32;2], all_slices:HashMap::<[i32;2], i32>) {
         let mut x:i32 = start[0];
         let mut y:i32 = start[1];
         let mut current_map:HashMap::<[i32;2], i32> = all_slices.clone();
-        let mut z:i32 = current_map.remove(&start).unwrap();
+        let mut z:i32 = lowest[0];
+        modify_hash_map(&mut current_map, start, -lowest[0]);
         let mut stack: Vec<i32> = Vec::new();
         let mut step_backward = false;
         order(&mut x, &mut y, &mut z);
@@ -140,9 +168,11 @@ fn solve(lowest:[i32;2], all_slices:HashMap::<[i32;2], i32>) {
         }
         if DISPLAY_MODE {println!("ende");}
         if success {
-            if DISPLAY_MODE {println!("success");}
-            println!("test");
+            if PRINT_SOLUTION {println!("funktioniert");}
+            output(stack, start, lowest[0], x, y, z, test_number);
             break;
+        } else {
+            if PRINT_SOLUTION {println!("funktioniert nicht");}
         }
     }
 } 
