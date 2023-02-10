@@ -1,15 +1,17 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
 use std::collections::HashMap;
-use std::str::FromStr;
 use std::env;
-use std::io::Write;
+use std::fs::File;
+use std::io::stdin;
+use std::io::{Write, BufRead, BufReader};
+use std::str::FromStr;
 use std::time::{Duration, Instant};
+
 
 const DISPLAY_MODE:bool = false;
 const PRINT_SOLUTION:bool = false;
-const PRINT_TIME_ALL:bool = false;
+const PRINT_TIME_ALL:bool = true;
 const PRINT_TIME_TOTAL:bool = true;
+const WAIT_FOR_END_ENTER:bool = false;
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
@@ -32,6 +34,10 @@ fn main() {
         let timedelta:Duration = start_time_all.elapsed();
         let time:f32 = timedelta.as_secs_f32();
         println!("Zeit für alle Tests in Sekunden: {}", time);
+    }
+    if WAIT_FOR_END_ENTER {
+        let mut input = String::new();
+        stdin().read_line(&mut input).unwrap();
     }
 }
 
@@ -59,7 +65,7 @@ fn order(x:&mut i32, y:&mut i32, z:&mut i32) {
 
 fn solve(lowest:[i32;2], all_slices:HashMap::<[i32;2], i32>, test_number:i32, n:i64) {
     let mut start_slices: Vec<[i32;2]> = Vec::new();   
-    let start_time:Instant = Instant::now(); //PRINT_TIME
+    let start_time:Instant = Instant::now(); // PRINT_TIME
     for (key, value) in all_slices.iter() {
         if *value>=lowest[0] && (lowest[1]==key[0] || lowest[1]==key[1]){
             start_slices.push(key.clone());
@@ -155,7 +161,6 @@ fn solve(lowest:[i32;2], all_slices:HashMap::<[i32;2], i32>, test_number:i32, n:
         if DISPLAY_MODE {println!("ende");}
         if success {
             if PRINT_SOLUTION {println!("funktioniert");}
-            //output(stack, start, lowest[0], x, y, z, test_number);
             if PRINT_TIME_ALL {
                 let timedelta:Duration = start_time.elapsed();
                 let factor:i64 = (timedelta.as_nanos() as i64) / n;
