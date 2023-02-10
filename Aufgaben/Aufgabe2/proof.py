@@ -1,9 +1,11 @@
 NUMBER_TESTCASES = 7
-DISPLAY_MODE = True
+DISPLAY_MODE = False
+from datetime import datetime as time
 
 def proof():
     for i in range(1,NUMBER_TESTCASES+1):
-        with open("output/test" + str(i) + ".txt", encoding="utf-8-sig") as file:
+        l = []
+        with open(__file__[:-8] + "output/test" + str(i) + ".txt", encoding="utf-8-sig") as file:
             lines = file.readlines()
             if not lines: continue
             start = lines[0]
@@ -15,6 +17,7 @@ def proof():
                 dimensions.sort()
                 line = line.strip().split(", ")
                 a, b = [int(num) for num in line]
+                l.append((a,b))
                 if a == dimensions[0] and b == dimensions[1]:
                     dimensions[2] +=1
                     if DISPLAY_MODE: print("\r", dimensions, end="")
@@ -33,4 +36,6 @@ def proof():
 
 
 if __name__ == "__main__":
+    start = time.now()
     proof()
+    print(time.now() -start)
