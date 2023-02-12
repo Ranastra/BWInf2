@@ -10,5 +10,15 @@ for i in range(1,NUMBER_TESTCASES+1):
         testcases.append(lines)
         test.close()
 
+def print_points(testcases, i):
+    print("test", i)
+    print("X", i)
+    for point in testcases[i]:
+        print(point[0])
+    print("Y", i)
+    for point in testcases[i]:
+        print(point[1])
+
 if __name__ == "__main__":
-    print(testcases[0][:20]) #debug
+    #print(testcases[0][:20]) #debug
+    print_points(testcases, 6)

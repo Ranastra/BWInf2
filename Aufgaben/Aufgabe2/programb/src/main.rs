@@ -42,29 +42,8 @@ fn main() {
 }
 
 
-fn order(x:&mut i32, y:&mut i32, z:&mut i32) {
-    if *x <= *y && *x <= *z {
-        if *z <= *y {
-            (*z, *y) = (*y, *z);
-        }
-    } else if *y <= *z && *y <= *x {
-        if *x <= *z {
-            (*x, *y) = (*y, *x);
-        } else {
-            (*x, *y, *z) = (*y, *z, *x);
-        }
-    } else {
-        if *x <= *y {
-            (*x, *y, *z) = (*z, *x, *y);
-        } else {
-            (*x, *z) = (*z, *x);
-        }
-    }
-}
-
-
-fn solve(lowest:i32, lowest_second:HashSet<i32>, all_slices:HashMap::<[i32;2], i32>, test_number:i32, n:i64) {
-    let mut start_slices: Vec<[i32;2]> = Vec::new();   
+fn solve(lowest:i32, lowest_second:HashSet<i32>, mut all_slices:HashMap::<[i32;2], i32>, test_number:i32, n:i64) {
+    let mut start_slices: Vec<[i32;2]> = Vec::new();   // change all_slices to mut 
     let start_time:Instant = Instant::now(); // PRINT_TIME_ALL
     for (key, value) in all_slices.iter() {
         if *value >= lowest && (lowest_second.contains(&key[0]) || lowest_second.contains(&key[1])){
@@ -80,16 +59,19 @@ fn solve(lowest:i32, lowest_second:HashSet<i32>, all_slices:HashMap::<[i32;2], i
         let start: [i32;2] = start_slices.pop().unwrap();
         let mut x:i32 = start[0];
         let mut y:i32 = start[1];
-        let mut current_map:HashMap::<[i32;2], i32> = all_slices.clone();
+        if DISPLAY_MODE {
+            //println!("all_slices: {:?}", all_slices); //t 
+        }
+        //let mut current_map:HashMap::<[i32;2], i32> = all_slices.clone(); //t
         let mut z:i32 = lowest;
-        modify_hash_map(&mut current_map, start, -lowest);
+        modify_hash_map(&mut all_slices, start, -lowest); //t
         let mut stack: Vec<i32> = Vec::new();
         let mut step_backward:bool = false;
         order(&mut x, &mut y, &mut z);
         let mut state:i32;
         let mut success:bool = true;
-        while !current_map.is_empty() || step_backward {
-            if DISPLAY_MODE {println!("{},{},{} {:?}", x,y,z,current_map);}
+        while !all_slices.is_empty() || step_backward { //t
+            //if DISPLAY_MODE {println!("{},{},{} {:?}", x,y,z,all_slices);} //t
             if step_backward {
                 if DISPLAY_MODE {println!("in step_backwards");}
                 order(&mut x, &mut y, &mut z);
@@ -99,7 +81,7 @@ fn solve(lowest:i32, lowest_second:HashSet<i32>, all_slices:HashMap::<[i32;2], i
                 }
                 state = stack.pop().unwrap();
                 let slice = back_backtrack(state, &mut x, &mut y, &mut z);
-                modify_hash_map(&mut current_map, slice, 1);
+                modify_hash_map(&mut all_slices, slice, 1); //t
                 if state == 3 {
                     continue;
                 } else {
@@ -110,9 +92,9 @@ fn solve(lowest:i32, lowest_second:HashSet<i32>, all_slices:HashMap::<[i32;2], i
             }
             order(&mut x, &mut y, &mut z);
             let arr:[bool;3] = [
-                current_map.contains_key(&[x, y]),
-                current_map.contains_key(&[x, z]),
-                current_map.contains_key(&[y, z]),
+                all_slices.contains_key(&[x, y]), //t
+                all_slices.contains_key(&[x, z]), //t
+                all_slices.contains_key(&[y, z]), //t
             ];
             if state == 0 {
                 if !arr[0] {
@@ -123,17 +105,17 @@ fn solve(lowest:i32, lowest_second:HashSet<i32>, all_slices:HashMap::<[i32;2], i
                         } else {
                             stack.push(3);
                             x += 1;
-                            modify_hash_map(&mut current_map, [y,z], -1);
+                            modify_hash_map(&mut all_slices, [y,z], -1); //t
                         }
                     } else {
                         stack.push(2);
                         y += 1;
-                        modify_hash_map(&mut current_map, [x,z], -1);
+                        modify_hash_map(&mut all_slices, [x,z], -1); //t
                     }
                 } else {
                     stack.push(1);
                     z += 1;
-                    modify_hash_map(&mut current_map, [x,y], -1);
+                    modify_hash_map(&mut all_slices, [x,y], -1); //t
                 }
             } else if state == 1 {
                 if !arr[1] {
@@ -143,12 +125,12 @@ fn solve(lowest:i32, lowest_second:HashSet<i32>, all_slices:HashMap::<[i32;2], i
                     } else {
                         stack.push(3);
                         x += 1;
-                        modify_hash_map(&mut current_map, [y,z], -1);
+                        modify_hash_map(&mut all_slices, [y,z], -1); //t
                     }
                 } else {
                     stack.push(2);
                     y += 1;
-                    modify_hash_map(&mut current_map, [x,z], -1);
+                    modify_hash_map(&mut all_slices, [x,z], -1); //t
                 }
             } else {
                 if !arr[2] {
@@ -157,7 +139,7 @@ fn solve(lowest:i32, lowest_second:HashSet<i32>, all_slices:HashMap::<[i32;2], i
                 } else {
                     stack.push(3);
                     x += 1;
-                    modify_hash_map(&mut current_map, [y,z], -1);
+                    modify_hash_map(&mut all_slices, [y,z], -1); //t
                 } 
             }
         }
@@ -176,6 +158,7 @@ fn solve(lowest:i32, lowest_second:HashSet<i32>, all_slices:HashMap::<[i32;2], i
             found_solution = true;
             break;
         } else {
+            modify_hash_map(&mut all_slices, start, lowest); //t delet
             if PRINT_SOLUTION {println!("funktioniert nicht");}
         }
     }
@@ -269,4 +252,25 @@ fn output_rev(stack:Vec<i32>, start:[i32;2], lowest:i32, test_number:i32) {
     let path:String = format!("../output/test{}.txt", test_number.to_string());
     let mut file = File::create(path).unwrap();
     file.write_all(output.as_bytes()).unwrap();
+}
+
+
+fn order(x:&mut i32, y:&mut i32, z:&mut i32) {
+    if *x <= *y && *x <= *z {
+        if *z <= *y {
+            (*z, *y) = (*y, *z);
+        }
+    } else if *y <= *z && *y <= *x {
+        if *x <= *z {
+            (*x, *y) = (*y, *x);
+        } else {
+            (*x, *y, *z) = (*y, *z, *x);
+        }
+    } else {
+        if *x <= *y {
+            (*x, *y, *z) = (*z, *x, *y);
+        } else {
+            (*x, *z) = (*z, *x);
+        }
+    }
 }

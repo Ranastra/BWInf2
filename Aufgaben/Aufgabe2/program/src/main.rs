@@ -9,8 +9,8 @@ use std::time::{Duration, Instant};
 
 const DISPLAY_MODE:bool = false;
 const PRINT_SOLUTION:bool = false;
-const PRINT_TIME_ALL:bool = false;
-const PRINT_TIME_TOTAL:bool = false;
+const PRINT_TIME_ALL:bool = true;
+const PRINT_TIME_TOTAL:bool = true;
 const WAIT_FOR_END_ENTER:bool = false;
 
 fn main() {
