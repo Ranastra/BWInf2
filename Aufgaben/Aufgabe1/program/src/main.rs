@@ -43,13 +43,13 @@ fn angle(d1:f32, d2:f32, d3:f32) -> bool {
 }
 
 
-fn read_input(number_of_test: i32) -> (usize, Vec::<[f32; 2]>) {
+fn read_input(number_of_test: i32) -> (i32, Vec::<[f32; 2]>) {
     let s:String = format!("../testcases/bsp{}.txt", number_of_test.to_string());
     let file:File = File::open(s).unwrap();
     let mut all_points:Vec<[f32; 2]> = Vec::<[f32; 2]>::new();
     let reader = BufReader::new(file);
     let lines = reader.lines();
-    let mut n: usize = 0;
+    let mut n: i32 = 0;
     for line in lines {
         let line:String = line.unwrap();
         let mut line2 = line.trim().split_whitespace();
@@ -62,7 +62,8 @@ fn read_input(number_of_test: i32) -> (usize, Vec::<[f32; 2]>) {
     (n, all_points)
 }
 
-fn get_all_distances(n:usize, ap:&Vec::<[f32;2]>) -> Vec<Vec<f32>> {
+fn get_all_distances(n:i32, ap:&Vec::<[f32;2]>) -> Vec<Vec<f32>> {
+    let n:usize = n as usize;
     let mut all_distances:Vec<Vec<f32>> = vec![vec![0.0; n]; n];
     for i in 0..n {
         for j in (0..n).rev() {
@@ -78,8 +79,9 @@ fn get_all_distances(n:usize, ap:&Vec::<[f32;2]>) -> Vec<Vec<f32>> {
     all_distances
 }
 
-fn get_all_angles(n:usize, ad:&Vec<Vec<f32>>) -> Vec<Vec<Vec<bool>>>{
+fn get_all_angles(n:i32, ad:&Vec<Vec<f32>>) -> Vec<Vec<Vec<bool>>>{
     // realy high memory usage ....
+    let n:usize = n as usize;
     let mut all_angles:Vec<Vec<Vec<bool>>> = vec![vec![vec![false; n]; n]; n];
     for i in 0..n {
         for j in (0..n).rev() {
@@ -101,9 +103,10 @@ fn get_all_angles(n:usize, ad:&Vec<Vec<f32>>) -> Vec<Vec<Vec<bool>>>{
     all_angles
 }
 
-fn solve(n:usize, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> Vec<usize> {
-    let mut stack:Vec<usize> = Vec::new();
-    let mut visited:HashSet<usize> = HashSet::new();
+fn solve(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> Vec<i32> {
+    let mut stack:Vec<i32> = Vec::new();
+    let mut visited:HashSet<i32> = HashSet::new();
+    let mut found_path:bool = false;
     for sp1 in 0..n {
         for sp2 in 0..n {
             if sp1 == sp2 {
@@ -113,8 +116,27 @@ fn solve(n:usize, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> Vec<usize> {
                 stack.push(sp1);
                 visited.insert(sp2);
                 stack.push(sp2);
+                let mut step_backwards:bool = false;
+                let mut last:i32 = -1; 
+                loop {
+                    if step_backwards && stack.len() == 2 {
+                        break;
+                    } else if step_backwards {
+                        last = stack.pop().unwrap();
+                        visited.remove(&last);
+                    } else {
+                        
+                    }
+                }
+                if found_path {break;}
+                visited.remove(&sp1);
+                stack.pop();
+                visited.remove(&sp2);
+                stack.pop();
             }
+            if found_path {break;}
         }
+        if found_path {break;}
     }
     stack
 }
