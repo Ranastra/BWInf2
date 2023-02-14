@@ -125,7 +125,29 @@ fn solve(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> Vec<i32> {
                         last = stack.pop().unwrap();
                         visited.remove(&last);
                     } else {
-                        
+                        let mut closest_distance:f32 = 0.0;
+                        let mut closest_number:i32 = n;
+                        for i in (last+1)..n {
+                            let lp:usize = stack[stack.len()-1] as usize;
+                            let llp:usize = stack[stack.len()-2]as usize;
+                            if aa[llp][lp][i as usize] {
+                                if closest_number == n {
+                                    closest_number = i;
+                                    closest_distance = ad[lp][i as usize];
+                                } else {
+                                    let distance:f32 = ad[lp][i as usize];
+                                    if distance < closest_distance {
+                                        closest_number = i;
+                                        closest_distance = ad[lp][i as usize];
+                                    }
+                                }
+                            }
+                        }
+                        if closest_number == n {
+                            step_backwards = true;
+                        } else {
+                            // auf stack legen in visited einfügen last auf null setzten 
+                        }
                     }
                 }
                 if found_path {break;}
