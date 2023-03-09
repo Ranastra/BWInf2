@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 
 def plot_path(i):
     with open("output/test" + str(i) + ".txt", "r") as file:
-        lines = [line.strip() for line in file.readlines()][:-1]
+        lines = [line.strip() for line in file.readlines()]
         distance = lines[0]
         xs = []
         ys = []
@@ -10,7 +10,6 @@ def plot_path(i):
             x, y = point.split(", ")
             xs.append(float(x))
             ys.append(float(y))
-            #plt.plot(float(x), float(y))
         plt.plot(xs, ys, marker=".")
         plt.suptitle(str(i)+" "+str(distance))
         plt.show()
@@ -25,7 +24,6 @@ def plot_points(i):
             x, y = point.split(" ")
             xs.append(float(x))
             ys.append(float(y))
-            #plt.plot(float(x), float(y))
         plt.plot(xs, ys, marker=".", linewidth=0)
         plt.suptitle(str(i))
         plt.show()
@@ -35,4 +33,4 @@ def plot_points(i):
 
 if __name__ == "__main__":
     for i in range(1,8):
-        plot_points(i)
+        plot_path(i)

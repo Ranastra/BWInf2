@@ -12,6 +12,7 @@ const PRINT_SOLUTION:bool = false;
 const PRINT_TIME_ALL:bool = true;
 const PRINT_TIME_TOTAL:bool = true;
 const WAIT_FOR_END_ENTER:bool = false;
+const NUMBER_EATEN:i32 = 1;
 
 fn main() {
     env::set_var("RUST_BACKTRACE", "1");
@@ -55,6 +56,7 @@ fn solve(lowest:i32, lowest_second:HashSet<i32>, mut all_slices:HashMap::<[i32;2
         println!("{:?}", start_slices);
     }
     let mut found_solution:bool = false;
+    let mut eaten_slices:HashSet<[i32;2]> = HashSet::new();
     while !start_slices.is_empty() {
         let start: [i32;2] = start_slices.pop().unwrap();
         let mut x:i32 = start[0];
@@ -249,7 +251,7 @@ fn output_rev(stack:Vec<i32>, start:[i32;2], lowest:i32, test_number:i32) {
     if PRINT_SOLUTION {
         println!("{}", output);
     }
-    let path:String = format!("../output/test{}.txt", test_number.to_string());
+    let path:String = format!("../output/test{}.txt", test_number);
     let mut file = File::create(path).unwrap();
     file.write_all(output.as_bytes()).unwrap();
 }

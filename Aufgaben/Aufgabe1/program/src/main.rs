@@ -1,3 +1,4 @@
+// this is the completely greedy approach for now
 use std::f32::consts::PI;
 use std::f32;
 use std::str::FromStr;
@@ -6,6 +7,8 @@ use std::fs::File;
 use std::collections::HashSet;
 use std::cmp;
 use rand::seq::SliceRandom;
+use std::collections::VecDeque;
+
 
 const HALF_PI:f32 = PI/2.0;
 
@@ -27,7 +30,7 @@ fn main() {
         let points = vec!([f1, f1], [f3, f1], [f1, f2]);
         let all_distances = get_all_distances(n, &points);
         let all_angles = get_all_angles(n, &all_distances);
-        let (td, stack) = solve(n, all_distances, all_angles);
+        let (td, stack) = solve_greedy1(n, all_distances, all_angles);
         terminal_output(td, stack, points);
     } else {
         for test in 1..8 {
@@ -38,7 +41,7 @@ fn main() {
             if PRINT0 {println!("after distances");}
             let all_angles:Vec<Vec<Vec<bool>>> = get_all_angles(n, &all_distances);
             if PRINT0 {println!("after angles");}
-            let (td, stack) = solve(n, all_distances, all_angles);
+            let (td, stack) = solve_greedy1(n, all_distances, all_angles);
             if PRINT0 {println!("after solve");}
             // terminal_output(td, stack, points);
             output(td, stack, points, test);
@@ -120,7 +123,7 @@ fn get_all_angles(n:i32, ad:&Vec<Vec<f32>>) -> Vec<Vec<Vec<bool>>>{
     all_angles
 }
 
-fn solve(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<usize>){
+fn solve_greedy1(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<usize>){
     let n:usize = n as usize;
     let mut stack:Vec<usize> = Vec::new();
     let mut visited:HashSet<usize> = HashSet::new();
@@ -232,6 +235,147 @@ fn solve(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<usize>){
     let current_path_length = {if found_path {calculate_path_length(&stack, &ad)} else {0.0}};
     (current_path_length, stack)
 }
+
+fn solve_greedy2(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<usize>){
+    let n:usize = n as usize;
+    let mut deque:VecDeque<usize> = VecDeque::new();
+    let mut stack_mode:Vec<bool> = Vec::new();
+    let mut visited:HashSet<usize> = HashSet::new();
+    let mut found_path:bool = false;
+    let mut start_points:Vec<usize> = (0..n).collect();
+    if RAND_MODE {start_points.shuffle(&mut rand::thread_rng());}
+    let mut action_count:i32 = 0;
+    'pathfinder: for sp1 in start_points {
+        deque.push_back(sp1);
+        if PRINT1 {println!("{:?}", deque);}
+        if PRINT3 {println!("{} {}", deque.len(), sp1);}
+        visited.insert(sp1);
+        let ordered_distances:Vec<usize> = get_ordered_distances(&ad[sp1]);
+        for sp2 in ordered_distances {
+            if sp1 == sp2 {continue;}
+            deque.push_back(sp2);
+            if PRINT1 {println!("{:?}", deque);}
+            if PRINT3 {println!("{} {}", deque.len(), sp2);}
+            visited.insert(sp2);
+            let mut backwards:bool = false;
+            let mut last_on_place_right:usize = n;
+            let mut last_on_place_left:usize = n;
+            // Backtracking
+            loop {
+                if backwards {
+                    if deque.len() == 2 {
+                        // kein path gefunden für diesen 2. Knoten
+                        break;
+                    } else {
+                        let mode:bool = stack_mode.pop().unwrap();
+                        if mode {
+                            last_on_place_right = deque.pop_back().unwrap();
+                            visited.remove(&last_on_place_right);
+                        } else {
+                            last_on_place_left = deque.pop_front().unwrap();
+                            visited.remove(&last_on_place_left);
+                        }
+                        if PRINT1 {println!("{:?}", deque);}
+                        if PRINT3 {println!("{} ({} {})", deque.len(), last_on_place_left, last_on_place_right);}
+                        backwards = false;
+                    }
+                } else {
+                    // find next point
+                    let last_distance_right:f32 = {if last_on_place_right == n {0.0} else {ad[*(deque.back().unwrap())][last_on_place_right]}};
+                    let last_distance_left:f32 = {if last_on_place_left == n {0.0} else {ad[deque[0]][last_on_place_left]}};
+                    let mut best:usize = n;
+                    let mut best_distance:f32 = 0.0;
+                    let last_num:usize = deque[deque.len()-1];
+                    let last_last_num:usize = deque[deque.len()-2];
+                    let first_num:usize = deque[0];
+                    let second_num:usize = deque[1];
+                    let mut best_mode:bool = true;
+                    for next_point in 0..n {
+                        // if visited.contains(&next_point) {
+                        //     // skip when point is already visited
+                        //     continue;
+                        // } else if !aa[last_last_num][last_num][next_point] {
+                        //     // skip if the angle is too small
+                        //     continue;
+                        // } else if last_distance > ad[last_num][next_point] {
+                        //     // skip cause distance of last choosen before backwards is longer
+                        //     continue;
+                        // } else if last_distance == ad[last_num][next_point] && last_on_place >= next_point {
+                        //     // skip because this next_point was already checked
+                        //     continue;
+                        // } else if  best != n && ad[best][last_num] < ad[next_point][last_num] {
+                        //     // skip cause this is worse than the best distance
+                        //     continue;
+                        // } else if best != n && ad[best][last_num] == ad[next_point][last_num] && next_point > best {
+                        //     // if distances are the same the point with lower index should be choosen
+                        //     continue;
+                        // } else {
+                        //     // better next point was found
+                        //     best = next_point;
+                        // }
+                        if visited.contains(&next_point) {
+                            // skip when point is already visited
+                        } else {
+                            if aa[last_last_num][last_last_num][next_point] && 
+                               !(last_distance_right > ad[last_num][next_point]) && 
+                               !(last_distance_right == ad[last_num][next_point] && last_on_place_right >= next_point) &&
+                               !(best != n && ad[best][last_num] < ad[next_point][last_num]) &&
+                               !(best != n && ad[best][last_num] == ad[next_point][last_num] && next_point > best) {
+                                
+                            }
+                            if aa[second_num][first_num][next_point] {
+
+                            }
+                        }
+                    }
+                    // apply next point
+                    if best == n {
+                        // no new point so backward
+                        backwards = true;
+                        if PRINT1 {println!("backstep");}
+                    } else {
+                        last_on_place = sp1;
+                        stack.push(best);
+                        if PRINT1 {println!("{:?}", deque);}
+                        if PRINT3 {println!("{} {}", deque.len(), best);}
+                        visited.insert(best);
+                        if RAND_MODE {
+                            action_count += 1;
+                            if action_count == MAX_ACTION_COUNT {
+                                // just restart for a new first point
+                                visited.clear();
+                                deque.clear();
+                                action_count = 0;
+                                continue 'pathfinder;
+                            }
+                        }
+                    }
+                    if deque.len() == n {
+                        found_path = true;
+                        if PRINT0 {println!("found solution");}
+                        break 'pathfinder;
+                    }
+                }
+            }
+            visited.remove(&sp2);
+            deque.pop_back();
+            if PRINT1 {println!("{:?}", deque);}
+            if PRINT3 {println!("{} {}", deque.len(), sp2);}
+        }
+        visited.remove(&sp1);
+        deque.pop_back();
+        if PRINT1 {println!("{:?}", deque);}
+        if PRINT3 {println!("{} {}", deque.len(), sp1);}
+    }
+    //output(stack, current_path_length);
+    //println!("{}, {:?}", current_path_length, stack);
+    if found_path {
+
+    }
+    let current_path_length = {if found_path {calculate_path_length(&deque, &ad)} else {0.0}};
+    (current_path_length, deque)
+}
+
 
 fn terminal_output(td:f32, stack:Vec<usize>, points:Vec<[f32;2]>) {
     println!("Distanz: {}", td);
