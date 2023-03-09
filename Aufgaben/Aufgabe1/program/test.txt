@@ -1,0 +1,5 @@
+pkt1;
+biggest_dist = 0
+for i in range(n) {
+    if i==pkt1 {continue}
+}

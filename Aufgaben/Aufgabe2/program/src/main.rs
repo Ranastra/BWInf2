@@ -249,7 +249,8 @@ fn output_rev(stack:Vec<i32>, start:[i32;2], lowest:i32, test_number:i32) {
     if PRINT_SOLUTION {
         println!("{}", output);
     }
-    let path:String = format!("../output/test{}.txt", test_number.to_string());
+    let path:String = format!("../output/test{}.txt", test_number);
+    //println!("{}", path);
     let mut file = File::create(path).unwrap();
     file.write_all(output.as_bytes()).unwrap();
 }
