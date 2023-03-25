@@ -1,4 +1,3 @@
-// this is the completely greedy approach for now
 use std::f32::consts::PI;
 use std::f32;
 use std::str::FromStr;
@@ -12,13 +11,15 @@ use std::collections::VecDeque;
 
 const HALF_PI:f32 = PI/2.0;
 
-const PRINT0:bool = true; // steps 
+const PRINT0:bool = false; // steps 
 const PRINT1:bool = false; // stack modified
-const PRINT2:bool = true; // just result
-const PRINT3:bool = false; // lenght oof stack and added or removed point
-const RAND_MODE:bool = true; // whether or not the algorithm should be fixed by randomnes
+const PRINT2:bool = false; // just result
+const PRINT3:bool = false; // lenght of stack and added or removed point
+const PRINT4:bool = false; // combo 3 / 1
+const RAND_MODE:bool = true; // whether or not the infinit loop should be fixed by randomnes
+const COMPARE:bool = true; // compare solve1 and solve2
 
-const MAX_ACTION_COUNT:i32 = 10_000; // limit for rand mode
+const MAX_ACTION_COUNT:i32 = 20_000; // limit for rand mode
 
 fn main() {
     if false {
@@ -30,7 +31,7 @@ fn main() {
         let points = vec!([f1, f1], [f3, f1], [f1, f2]);
         let all_distances = get_all_distances(n, &points);
         let all_angles = get_all_angles(n, &all_distances);
-        let (td, stack) = solve_greedy1(n, all_distances, all_angles);
+        let (td, stack) = solve_greedy2(n, &all_distances, &all_angles);
         terminal_output(td, stack, points);
     } else {
         for test in 1..8 {
@@ -41,12 +42,32 @@ fn main() {
             if PRINT0 {println!("after distances");}
             let all_angles:Vec<Vec<Vec<bool>>> = get_all_angles(n, &all_distances);
             if PRINT0 {println!("after angles");}
-            let (td, stack) = solve_greedy1(n, all_distances, all_angles);
-            if PRINT0 {println!("after solve");}
-            // terminal_output(td, stack, points);
-            output(td, stack, points, test);
-            if PRINT0 {println!("after output");}
-            if PRINT2 {println!("finished {}", test);}
+            if COMPARE {
+                let (td1, stack1) = solve_greedy1(n, &all_distances, &all_angles);
+                let (td2, stack2) = solve_greedy2(n, &all_distances, &all_angles);
+                //println!("{}: {} {}", test, td1, td2);
+                let mut td:f32;
+                let mut stack:Vec<usize>;
+                if ((td2 == 0.0) || (td1 < td2)) && (td1 != 0.0) {
+                    td = td1;
+                    stack = stack1;
+                } else {
+                    td = td2;
+                    stack = stack2;
+                }
+                opt0_create_circle(&mut td, &mut stack, &all_distances, &all_angles);
+                output(td, stack, points, test);
+            } else {
+                let (mut td, mut stack) = solve_greedy2(n, &all_distances, &all_angles);
+                if PRINT0 {println!("after solve");}
+                // terminal_output(td, stack, points);
+                if td == 0.0 {
+                    (td, stack) = solve_greedy1(n, &all_distances, &all_angles);
+                }
+                output(td, stack, points, test);
+                if PRINT0 {println!("after output");}
+                if PRINT2 {println!("finished {}", test);}
+            }
         }
     }
 }
@@ -123,7 +144,7 @@ fn get_all_angles(n:i32, ad:&Vec<Vec<f32>>) -> Vec<Vec<Vec<bool>>>{
     all_angles
 }
 
-fn solve_greedy1(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<usize>){
+fn solve_greedy1(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> (f32, Vec<usize>){
     let n:usize = n as usize;
     let mut stack:Vec<usize> = Vec::new();
     let mut visited:HashSet<usize> = HashSet::new();
@@ -134,14 +155,14 @@ fn solve_greedy1(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<u
     'pathfinder: for sp1 in start_points {
         stack.push(sp1);
         if PRINT1 {println!("{:?}", stack);}
-        if PRINT3 {println!("{} {}", stack.len(), sp1);}
+        if PRINT3 {println!("{} {} sp1", stack.len(), sp1);}
         visited.insert(sp1);
         let ordered_distances:Vec<usize> = get_ordered_distances(&ad[sp1]);
         for sp2 in ordered_distances {
             if sp1 == sp2 {continue;}
             stack.push(sp2);
             if PRINT1 {println!("{:?}", stack);}
-            if PRINT3 {println!("{} {}", stack.len(), sp2);}
+            if PRINT3 {println!("{} {} sp2", stack.len(), sp2);}
             visited.insert(sp2);
             let mut backwards:bool = false;
             let mut last_on_place:usize = sp1;
@@ -154,7 +175,7 @@ fn solve_greedy1(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<u
                     } else {
                         last_on_place = stack.pop().unwrap();
                         if PRINT1 {println!("{:?}", stack);}
-                        if PRINT3 {println!("{} {}", stack.len(), last_on_place);}
+                        if PRINT3 {println!("{} {} backwards", stack.len(), last_on_place);}
                         visited.remove(&last_on_place);
                         backwards = false;
                     }
@@ -194,10 +215,10 @@ fn solve_greedy1(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<u
                         backwards = true;
                         if PRINT1 {println!("backstep");}
                     } else {
+                        if PRINT3 {println!("{} {} {}", stack.len(), best, last_on_place);}
                         last_on_place = sp1;
                         stack.push(best);
                         if PRINT1 {println!("{:?}", stack);}
-                        if PRINT3 {println!("{} {}", stack.len(), best);}
                         visited.insert(best);
                         if RAND_MODE {
                             action_count += 1;
@@ -220,12 +241,12 @@ fn solve_greedy1(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<u
             visited.remove(&sp2);
             stack.pop();
             if PRINT1 {println!("{:?}", stack);}
-            if PRINT3 {println!("{} {}", stack.len(), sp2);}
+            if PRINT3 {println!("{} {} sp2 r", stack.len(), sp2);}
         }
         visited.remove(&sp1);
         stack.pop();
         if PRINT1 {println!("{:?}", stack);}
-        if PRINT3 {println!("{} {}", stack.len(), sp1);}
+        if PRINT3 {println!("{} {} sp1 r", stack.len(), sp1);}
     }
     //output(stack, current_path_length);
     //println!("{}, {:?}", current_path_length, stack);
@@ -236,26 +257,29 @@ fn solve_greedy1(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<u
     (current_path_length, stack)
 }
 
-fn solve_greedy2(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<usize>){
+fn solve_greedy2(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> (f32, Vec<usize>){
     let n:usize = n as usize;
     let mut deque:VecDeque<usize> = VecDeque::new();
-    let mut stack_mode:Vec<bool> = Vec::new();
     let mut visited:HashSet<usize> = HashSet::new();
     let mut found_path:bool = false;
     let mut start_points:Vec<usize> = (0..n).collect();
     if RAND_MODE {start_points.shuffle(&mut rand::thread_rng());}
     let mut action_count:i32 = 0;
     'pathfinder: for sp1 in start_points {
+        let mut stack_last_mode:Vec<(usize, bool)> = Vec::new();
+        stack_last_mode.push((sp1, true));
         deque.push_back(sp1);
         if PRINT1 {println!("{:?}", deque);}
-        if PRINT3 {println!("{} {}", deque.len(), sp1);}
+        if PRINT3 {println!("{} {} sp1", deque.len(), sp1);}
         visited.insert(sp1);
         let ordered_distances:Vec<usize> = get_ordered_distances(&ad[sp1]);
         for sp2 in ordered_distances {
             if sp1 == sp2 {continue;}
+            stack_last_mode.push((sp2, true));
             deque.push_back(sp2);
             if PRINT1 {println!("{:?}", deque);}
-            if PRINT3 {println!("{} {}", deque.len(), sp2);}
+            if PRINT3 {println!("{} {} sp2", deque.len(), sp2);}
+            if PRINT4 {println!("{:?} Startknoten", deque);}
             visited.insert(sp2);
             let mut backwards:bool = false;
             let mut last_on_place_right:usize = n;
@@ -267,8 +291,8 @@ fn solve_greedy2(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<u
                         // kein path gefunden für diesen 2. Knoten
                         break;
                     } else {
-                        let mode:bool = stack_mode.pop().unwrap();
-                        if mode {
+                        let back:(usize, bool) = stack_last_mode.pop().unwrap();
+                        if back.1 {
                             last_on_place_right = deque.pop_back().unwrap();
                             visited.remove(&last_on_place_right);
                         } else {
@@ -276,20 +300,19 @@ fn solve_greedy2(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<u
                             visited.remove(&last_on_place_left);
                         }
                         if PRINT1 {println!("{:?}", deque);}
-                        if PRINT3 {println!("{} ({} {})", deque.len(), last_on_place_left, last_on_place_right);}
+                        if PRINT3 {println!("{} ({} {}) r", deque.len(), last_on_place_left, last_on_place_right);}
+                        if PRINT4 {println!("({} {}) deque {:?}", last_on_place_left, last_on_place_right, deque);}
                         backwards = false;
                     }
                 } else {
                     // find next point
-                    let last_distance_right:f32 = {if last_on_place_right == n {0.0} else {ad[*(deque.back().unwrap())][last_on_place_right]}};
-                    let last_distance_left:f32 = {if last_on_place_left == n {0.0} else {ad[deque[0]][last_on_place_left]}};
                     let mut best:usize = n;
                     let mut best_distance:f32 = 0.0;
+                    let mut best_mode:bool = true;
                     let last_num:usize = deque[deque.len()-1];
                     let last_last_num:usize = deque[deque.len()-2];
                     let first_num:usize = deque[0];
                     let second_num:usize = deque[1];
-                    let mut best_mode:bool = true;
                     for next_point in 0..n {
                         // if visited.contains(&next_point) {
                         //     // skip when point is already visited
@@ -316,29 +339,55 @@ fn solve_greedy2(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<u
                         if visited.contains(&next_point) {
                             // skip when point is already visited
                         } else {
-                            if aa[last_last_num][last_last_num][next_point] && 
-                               !(last_distance_right > ad[last_num][next_point]) && 
-                               !(last_distance_right == ad[last_num][next_point] && last_on_place_right >= next_point) &&
-                               !(best != n && ad[best][last_num] < ad[next_point][last_num]) &&
-                               !(best != n && ad[best][last_num] == ad[next_point][last_num] && next_point > best) {
-                                
+                            // infinit loop? bei 1 und 2 .. occurence map
+                            if aa[last_last_num][last_last_num][next_point] {
+                                let distance:f32 = ad[last_num][next_point];
+                                if distance < best_distance || best == n {
+                                    let last_distance:f32 = {if n != last_on_place_right {ad[last_num][last_on_place_right]} else {0.0}};
+                                    if (last_on_place_right == n) || 
+                                       (last_distance < distance) || 
+                                       (last_distance == distance && next_point > last_on_place_right) {
+                                        best_mode = true;
+                                        best = next_point;
+                                        best_distance = distance;
+                                    }
+                                }
                             }
                             if aa[second_num][first_num][next_point] {
-
+                                let distance:f32 = ad[first_num][next_point];
+                                if distance < best_distance || best == n {
+                                    let last_distance:f32 = {if n != last_on_place_left {ad[last_num][last_on_place_left]} else {0.0}};
+                                    if (last_on_place_left == n) || 
+                                       (last_distance < distance) ||
+                                       (last_distance == distance && next_point > last_on_place_left) {
+                                        best_mode = false;
+                                        best = next_point;
+                                        best_distance = distance;
+                                    }
+                                }
                             }
                         }
                     }
                     // apply next point
+                    if PRINT4 {println!("({} {}), best: {}, deque: {:?}", last_on_place_left, last_on_place_right, best, deque);}
                     if best == n {
                         // no new point so backward
                         backwards = true;
                         if PRINT1 {println!("backstep");}
                     } else {
-                        last_on_place = sp1;
-                        stack.push(best);
+                        if best_mode {
+                            last_on_place_right = n;
+                            last_on_place_left = n;
+                            deque.push_back(best);
+                        } else {
+                            last_on_place_left = n;
+                            last_on_place_right = n;
+                            deque.push_front(best);
+                        }
                         if PRINT1 {println!("{:?}", deque);}
-                        if PRINT3 {println!("{} {}", deque.len(), best);}
+                        if PRINT3 {println!("{} {} best", deque.len(), best);}
                         visited.insert(best);
+                        stack_last_mode.push((best, best_mode));
                         if RAND_MODE {
                             action_count += 1;
                             if action_count == MAX_ACTION_COUNT {
@@ -360,18 +409,19 @@ fn solve_greedy2(n:i32, ad:Vec<Vec<f32>>, aa:Vec<Vec<Vec<bool>>>) -> (f32, Vec<u
             visited.remove(&sp2);
             deque.pop_back();
             if PRINT1 {println!("{:?}", deque);}
-            if PRINT3 {println!("{} {}", deque.len(), sp2);}
+            if PRINT3 {println!("{} {} sp2 r", deque.len(), sp2);}
         }
         visited.remove(&sp1);
         deque.pop_back();
         if PRINT1 {println!("{:?}", deque);}
-        if PRINT3 {println!("{} {}", deque.len(), sp1);}
+        if PRINT3 {println!("{} {} sp1 r", deque.len(), sp1);}
     }
     //output(stack, current_path_length);
     //println!("{}, {:?}", current_path_length, stack);
     if found_path {
 
     }
+    let deque:Vec<usize> = deque.into_iter().collect();
     let current_path_length = {if found_path {calculate_path_length(&deque, &ad)} else {0.0}};
     (current_path_length, deque)
 }
@@ -404,9 +454,11 @@ fn get_ordered_distances(distances:&Vec<f32>) -> Vec<usize> {
 
 fn calculate_path_length(stack:&Vec<usize>, ad:&Vec<Vec<f32>>) -> f32 {
     // calculates the total distance given the path and the all_distances map
+    //println!("{:?}", stack); //test
     let mut total_distance:f32 = 0.0;
     for i in 1..stack.len() as usize {
-        total_distance += ad[i-1][i];
+        total_distance += ad[stack[i-1]][stack[i]];
+        //println!("{}", ad[stack[i-1]][stack[i]]);
     }
     total_distance
 }
@@ -420,4 +472,30 @@ fn output(total_distance:f32, stack:Vec<usize>, points:Vec<[f32;2]>, test_number
     let path: String = format!("../output/test{}.txt", test_number);
     let mut file = File::create(path).unwrap();
     file.write_all(output.as_bytes()).unwrap();
+}
+
+fn opt0_create_circle(total_distance:&mut f32, stack:&mut Vec<usize>, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) {
+    // check if a circle could be created, 
+    // if so the start and endpoint will then be the points with longest distance in between
+    // does this recursively
+    let stack_len:usize = stack.len();
+    if aa[stack[stack_len-2]][stack[stack_len-1]][stack[0]] && aa[stack[stack_len-1]][stack[0]][stack[1]] {
+        let mut worst_distance:f32 = ad[stack[stack_len-1]][stack[0]];
+        let mut worst_index:usize = stack_len -1;
+        for i in 0..(stack_len-2) {
+            if worst_distance < ad[stack[i]][stack[i+1]] {
+                worst_index = i;
+                worst_distance = ad[stack[i]][stack[i+1]];
+            }
+        }
+        if worst_index != stack_len-1 {
+            let mut new_stack:Vec<usize> = Vec::new();
+            for i in 0..stack_len {
+                new_stack.push(stack[(i+worst_index+1)%stack_len]);
+            }
+            *total_distance = calculate_path_length(&new_stack, &ad);
+            *stack = new_stack;
+            opt0_create_circle(total_distance, stack, ad, aa);
+        }
+    }
 }
