@@ -13,6 +13,7 @@ def plot_path(i):
         # distance = 0.0
         # for i in range(1, len(xs)):
             # distance += ((xs[i] - xs[i-1])**2 + (ys[i]-ys[i-1])**2)**0.5
+        plt.axis("equal")
         plt.plot([xs[0]], [ys[0]], marker="x")
         plt.plot([xs[-1]], [[ys[-1]]], marker="o")
         plt.plot(xs, ys, marker=".")
@@ -30,6 +31,7 @@ def plot_points(i):
             x, y = point.split(" ")
             xs.append(float(x))
             ys.append(float(y))
+        plt.axis("equal")
         plt.plot(xs, ys, marker=".", linewidth=0)
         plt.suptitle(str(i))
         plt.show()
@@ -44,10 +46,15 @@ def print_distances(i):
         print(((lines[i][0]-lines[i+1][0])**2 + (lines[i][1]-lines[i+1][1])**2)**0.5)
     print(((lines[0][0]-lines[-1][0])**2 + (lines[0][1]-lines[-1][1])**2)**0.5)
 
+def print_distance_from_file(i):
+    with open(f"output/test{i}.txt", "r") as file:
+        print(file.readline().strip())
+
 
 
 if __name__ == "__main__":
     for i in range(1,8):
         plot_path(i)
+        print_distance_from_file(i)
     #print_distances(2)
     #plot_path(2)

@@ -594,6 +594,21 @@ fn opt2_move_n_points(total_distance:&mut f32, stack:&mut Vec<usize>, ad:&Vec<Ve
                 }
             }
             slice = new_stack.splice(new_location..(new_location+n), std::iter::empty()).collect::<Vec<_>>();
+            slice.reverse();
+            new_stack.splice(new_location..new_location, slice);
+            if proove_all_angles(&new_stack, aa) {
+            // let new_angles:Vec<usize> = vec!(choosen_point, new_location, new_location+n, new_location+n-1,
+            //                                  if choosen_point!=0{choosen_point-1} else {stack.len()},
+            //                                  if new_location!=0{new_location-1} else {stack.len()});
+            // if proove_angle_at_mult(&new_stack, aa, new_angles) {
+                let distance = calculate_path_length(&new_stack, ad); //n
+                if distance < *total_distance {
+                    *total_distance = distance;
+                    *stack = new_stack.clone();
+                }
+            }
+            slice = new_stack.splice(new_location..(new_location+n), std::iter::empty()).collect::<Vec<_>>();
+            slice.reverse();
         }
         new_stack.splice(choosen_point..choosen_point, slice);
     }
