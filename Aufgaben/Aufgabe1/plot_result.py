@@ -1,7 +1,9 @@
 import matplotlib.pyplot as plt
+from sys import argv
 
-def plot_path(i):
-    with open("output/test" + str(i) + ".txt", "r") as file:
+def plot_path(path):
+    # gefundenen path zeigen
+    with open(path, "r") as file:
         lines = [line.strip() for line in file.readlines()]
         distance = lines[0]
         xs = []
@@ -10,19 +12,16 @@ def plot_path(i):
             x, y = point.split(", ")
             xs.append(float(x))
             ys.append(float(y))
-        # distance = 0.0
-        # for i in range(1, len(xs)):
-            # distance += ((xs[i] - xs[i-1])**2 + (ys[i]-ys[i-1])**2)**0.5
         plt.axis("equal")
         plt.plot([xs[0]], [ys[0]], marker="x")
         plt.plot([xs[-1]], [[ys[-1]]], marker="o")
         plt.plot(xs, ys, marker=".")
         plt.suptitle(str(distance))
         plt.show()
-        #print(distance)
         file.close()
 
 def plot_points(i):
+    # nur points zeigen
     with open("testcases/bsp" + str(i) + ".txt", "r") as file:
         lines = [line.strip() for line in file.readlines()]
         xs = []
@@ -38,6 +37,7 @@ def plot_points(i):
         file.close()
 
 def print_distances(i):
+    # in rust berechnete Entfernungen ueberpruefen
     with open(f"output/test{i}.txt", "r") as file:
         lines = [[float(n) for n in point.strip().split(", ")] for point in file.readlines()]
     print(lines)
@@ -47,14 +47,14 @@ def print_distances(i):
     print(((lines[0][0]-lines[-1][0])**2 + (lines[0][1]-lines[-1][1])**2)**0.5)
 
 def print_distance_from_file(i):
+    # in rust berechnete Entfernung anzeigen
     with open(f"output/test{i}.txt", "r") as file:
         print(file.readline().strip())
 
 
 
 if __name__ == "__main__":
-    for i in range(1,8):
-        plot_path(i)
-        print_distance_from_file(i)
-    #print_distances(2)
-    #plot_path(2)
+    if len(argv) == 2:
+        name = argv[1][::-1].split("/",maxsplit=1)[0][::-1]
+        path = "output/" + name
+        plot_path(path)
