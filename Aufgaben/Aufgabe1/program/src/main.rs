@@ -56,15 +56,12 @@ fn main() {
                     stack = stack2;
                 }
                 opt0_create_circle(&mut td, &mut stack, &all_distances, &all_angles);
-                //let mut td_sec:f32 = td;
-                //let mut sec_stack:Vec<usize> = stack.clone();
-                //opt1_move_1point(&mut td, &mut stack, &all_distances, &all_angles);
                 for i in 1..(stack.len()-1) {
-                    opt2_move_n_points(&mut td, &mut stack, &all_distances, &all_angles, i);
+                    opt1_move_n_points(&mut td, &mut stack, &all_distances, &all_angles, i);
                 }
                 let stack_len:usize = stack.len();
                 for i in 2..(stack.len()+1) {
-                    opt2_move_n_points(&mut td, &mut stack, &all_distances, &all_angles, stack_len-i);
+                    opt1_move_n_points(&mut td, &mut stack, &all_distances, &all_angles, stack_len-i);
                 }
                 output(td, stack, points, test);
             } else {
@@ -521,98 +518,28 @@ fn opt0_create_circle(total_distance:&mut f32, stack:&mut Vec<usize>, ad:&Vec<Ve
     }
 }
 
-// fn proove_angle_at(stack:&Vec<usize>, aa:&Vec<Vec<Vec<bool>>>, index:usize) -> bool {
-//     if index >= stack.len() -1 || index == 0 {
-//         true
-//     } else {
-//         aa[stack[index-1]][stack[index]][stack[index+1]]
-//     }
-// }
-
-fn proove_angle_at_mult(stack:&Vec<usize>, aa:&Vec<Vec<Vec<bool>>>, indexes:Vec<usize>) -> bool {
-    let mut proove_angle:bool;
-    for index in indexes {
-        proove_angle = {
-            if index >= stack.len() -1 || index == 0 {
-                true
-            } else {
-                aa[stack[index-1]][stack[index]][stack[index+1]]
-            }
-        };
-        if !proove_angle {
-            return false;
-        }
-    }
-    true
-}
-
-fn opt1_move_1point(total_distance:&mut f32, stack:&mut Vec<usize>, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) {
-    // trys to move each single point to a new place in stack
-    // has n^4 time-complexity but its worth it :3
-    let last_distance:f32 = *total_distance;
-    let mut new_stack:Vec<usize> = stack.clone();
-    for choosen_point in 0..stack.len() { //n
-        let point:usize = new_stack.remove(choosen_point); //n
-        for new_location in 0..stack.len() { //n
-            new_stack.insert(new_location, point);
-            //if proove_all_angles(&new_stack, aa) {
-            let new_angles:Vec<usize> = vec!(choosen_point, new_location, new_location+1,
-                                             if choosen_point!=0{choosen_point-1} else {stack.len()},
-                                             if new_location!=0{new_location-1} else {stack.len()});
-            if proove_angle_at_mult(&new_stack, aa, new_angles) {
-                let distance = calculate_path_length(&new_stack, ad); //n
-                if distance < *total_distance {
-                    *total_distance = distance;
-                    *stack = new_stack.clone();
-                }
-            }
-            new_stack.remove(new_location);
-        }
-        new_stack.insert(choosen_point, point);
-    }
-    if last_distance != *total_distance {
-        opt1_move_1point(total_distance, stack, ad, aa);
-    }
-}
-
-fn opt2_move_n_points(total_distance:&mut f32, stack:&mut Vec<usize>, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>, n:usize) {
+fn opt1_move_n_points(total_distance:&mut f32, stack:&mut Vec<usize>, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>, n:usize) {
     let last_distance:f32 = *total_distance;
     let mut new_stack:Vec<usize> = stack.clone();
     for choosen_point in 0..(stack.len()+1-n) { //n
         let mut slice:Vec<usize> = new_stack.splice(choosen_point..(choosen_point+n), std::iter::empty()).collect::<Vec<_>>();
         for new_location in 0..(new_stack.len()+1) { //n
-            new_stack.splice(new_location..new_location, slice);
-            if proove_all_angles(&new_stack, aa) {
-            // let new_angles:Vec<usize> = vec!(choosen_point, new_location, new_location+n, new_location+n-1,
-            //                                  if choosen_point!=0{choosen_point-1} else {stack.len()},
-            //                                  if new_location!=0{new_location-1} else {stack.len()});
-            // if proove_angle_at_mult(&new_stack, aa, new_angles) {
-                let distance = calculate_path_length(&new_stack, ad); //n
-                if distance < *total_distance {
-                    *total_distance = distance;
-                    *stack = new_stack.clone();
+            for _ in 0..2 {
+                new_stack.splice(new_location..new_location, slice);
+                if proove_all_angles(&new_stack, aa) {
+                    let distance = calculate_path_length(&new_stack, ad); //n
+                    if distance < *total_distance {
+                        *total_distance = distance;
+                        *stack = new_stack.clone();
+                    }
                 }
+                slice = new_stack.splice(new_location..(new_location+n), std::iter::empty()).collect::<Vec<_>>();
+                slice.reverse();
             }
-            slice = new_stack.splice(new_location..(new_location+n), std::iter::empty()).collect::<Vec<_>>();
-            slice.reverse();
-            new_stack.splice(new_location..new_location, slice);
-            if proove_all_angles(&new_stack, aa) {
-            // let new_angles:Vec<usize> = vec!(choosen_point, new_location, new_location+n, new_location+n-1,
-            //                                  if choosen_point!=0{choosen_point-1} else {stack.len()},
-            //                                  if new_location!=0{new_location-1} else {stack.len()});
-            // if proove_angle_at_mult(&new_stack, aa, new_angles) {
-                let distance = calculate_path_length(&new_stack, ad); //n
-                if distance < *total_distance {
-                    *total_distance = distance;
-                    *stack = new_stack.clone();
-                }
-            }
-            slice = new_stack.splice(new_location..(new_location+n), std::iter::empty()).collect::<Vec<_>>();
-            slice.reverse();
         }
         new_stack.splice(choosen_point..choosen_point, slice);
     }
     if last_distance != *total_distance {
-        opt2_move_n_points(total_distance, stack, ad, aa, n);
+        opt1_move_n_points(total_distance, stack, ad, aa, n);
     }
 }
