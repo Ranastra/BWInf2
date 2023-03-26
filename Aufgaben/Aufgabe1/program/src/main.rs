@@ -13,70 +13,50 @@ const HALF_PI:f32 = PI/2.0; // 90°
 
 const PRINT0:bool = false; // print all steps 
 const PRINT1:bool = false; // print stack modified
-const PRINT2:bool = false; // print just result
 const PRINT3:bool = false; // lenght of stack and added or removed point
 const PRINT4:bool = false; // combo 1 and 3
 const CUT_ACTION_COUNT:bool = true; // whether or not nearly-infinite loop should be cutted of
-const RAND_MODE:bool = true; // whether or not the start points are choosen at random
+const RAND_FAST_MODE:bool = false; // whether or not the start points are choosen at random
 const COMPARE:bool = true; // use and compare both solve0 and solve1
 
-const MAX_ACTION_COUNT:i32 = 5_000; // limit for cut_action_count mode
+const MAX_ACTION_COUNT:i32 = 2_000; // limit for cut_action_count mode
 
 
 fn main() {
-    if false {
-        // Mini test
-        let f1:f32 = 0.0;
-        let f2:f32 = 3.0;
-        let f3:f32 = 4.0;
-        let n:i32 = 3;
-        let points = vec!([f1, f1], [f3, f1], [f1, f2]);
-        let all_distances = get_all_distances(n, &points);
-        let all_angles = get_all_angles(n, &all_distances);
-        let (td, stack) = solve_greedy1(n, &all_distances, &all_angles);
-        terminal_output(td, stack, points);
-    } else {
-        for test in 1..8 {
-            //if test == 5 {continue;} // muss debugt werden
-            let (n, points) = read_input(test);
-            if PRINT0 {println!("after reading input");}
-            let all_distances:Vec<Vec<f32>> = get_all_distances(n, &points);
-            if PRINT0 {println!("after distances");}
-            let all_angles:Vec<Vec<Vec<bool>>> = get_all_angles(n, &all_distances);
-            if PRINT0 {println!("after angles");}
-            if COMPARE {
-                let (td1, stack1) = solve_greedy0(n, &all_distances, &all_angles);
-                let (td2, stack2) = solve_greedy1(n, &all_distances, &all_angles);
-                //println!("{}: {} {}", test, td1, td2);
-                let mut td:f32;
-                let mut stack:Vec<usize>;
-                if ((td2 == 0.0) || (td1 < td2)) && (td1 != 0.0) {
-                    td = td1;
-                    stack = stack1;
-                } else {
-                    td = td2;
-                    stack = stack2;
+    for test in 1..8 {
+        if PRINT0 {println!("test: {}", test)}
+        let (n, points) = read_input(test);
+        if PRINT0 {println!("finish reading input");}
+        let all_distances:Vec<Vec<f32>> = get_all_distances(n, &points);
+        if PRINT0 {println!("finish distances");}
+        let all_angles:Vec<Vec<Vec<bool>>> = get_all_angles(n, &all_distances);
+        if PRINT0 {println!("finish angles");}
+        if COMPARE {
+            let mut valid_paths0:Vec<(f32, Vec<usize>)> = solve_greedy0(n, &all_distances, &all_angles);
+            let mut valid_paths1:Vec<(f32, Vec<usize>)> = solve_greedy1(n, &all_distances, &all_angles);
+            if PRINT0 {println!("finish solve")}
+            valid_paths0.append(&mut valid_paths1);
+            let mut best_stack:Vec<usize> = valid_paths0[0].clone().1;
+            let mut best_distance:f32 = valid_paths0[0].0;
+            let stack_len:usize = best_stack.len();
+            for (td, stack) in &mut valid_paths0 {
+                opt0_create_circle(td, stack, &all_distances, &all_angles);
+                for i in 1..(stack_len-1) {
+                    opt1_move_n_points(td, stack, &all_distances, &all_angles, i);
                 }
-                opt0_create_circle(&mut td, &mut stack, &all_distances, &all_angles);
-                for i in 1..(stack.len()-1) {
-                    opt1_move_n_points(&mut td, &mut stack, &all_distances, &all_angles, i);
+                for i in 2..(stack_len+1) {
+                    opt1_move_n_points(td, stack, &all_distances, &all_angles, stack_len-i);
                 }
-                let stack_len:usize = stack.len();
-                for i in 2..(stack.len()+1) {
-                    opt1_move_n_points(&mut td, &mut stack, &all_distances, &all_angles, stack_len-i);
-                }
-                output(td, stack, points, test);
-            } else {
-                let (mut td, mut stack) = solve_greedy1(n, &all_distances, &all_angles);
-                if PRINT0 {println!("after solve");}
-                // terminal_output(td, stack, points);
-                if td == 0.0 {
-                    (td, stack) = solve_greedy0(n, &all_distances, &all_angles);
-                }
-                output(td, stack, points, test);
-                if PRINT0 {println!("after output");}
-                if PRINT2 {println!("finished {}", test);}
+                if *td < best_distance {
+                    best_distance = *td;
+                    best_stack = stack.clone();
+                }   
             }
+            if PRINT0 {println!("finish optimisation")}
+            output(best_distance, best_stack, points, test);
+            if PRINT0 {println!("finish output")}
+        } else {
+            
         }
     }
 }
@@ -158,13 +138,13 @@ fn get_all_angles(n:i32, ad:&Vec<Vec<f32>>) -> Vec<Vec<Vec<bool>>>{
     all_angles
 }
 
-fn solve_greedy0(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> (f32, Vec<usize>){
+fn solve_greedy0(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> Vec<(f32, Vec<usize>)>{
+    let mut valid_paths:Vec<(f32, Vec<usize>)> = Vec::new();
     let n:usize = n as usize;
     let mut stack:Vec<usize> = Vec::new();
     let mut visited:HashSet<usize> = HashSet::new();
-    let mut found_path:bool = false;
     let mut start_points:Vec<usize> = (0..n).collect();
-    if RAND_MODE {start_points.shuffle(&mut rand::thread_rng());}
+    if RAND_FAST_MODE {start_points.shuffle(&mut rand::thread_rng());}
     let mut action_count:i32 = 0;
     'pathfinder: for sp1 in start_points {
         stack.clear();
@@ -247,9 +227,12 @@ fn solve_greedy0(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> (f32, Vec
                         }
                     }
                     if stack.len() == n {
-                        found_path = true;
-                        if PRINT0 {println!("found solution");}
-                        break 'pathfinder;
+                        let tup:(f32, Vec<usize>) = (calculate_path_length(&stack, &ad), stack.clone());
+                        valid_paths.push(tup);
+                        if RAND_FAST_MODE {
+                            return valid_paths;
+                        }
+                        continue 'pathfinder;
                     }
                 }
             }
@@ -263,17 +246,16 @@ fn solve_greedy0(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> (f32, Vec
         if PRINT1 {println!("{:?}", stack);}
         if PRINT3 {println!("{} {} sp1 r", stack.len(), sp1);}
     }
-    let current_path_length = {if found_path {calculate_path_length(&stack, &ad)} else {0.0}};
-    (current_path_length, stack)
+    valid_paths
 }
 
-fn solve_greedy1(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> (f32, Vec<usize>){
+fn solve_greedy1(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> Vec<(f32, Vec<usize>)>{
     let n:usize = n as usize;
     let mut deque:VecDeque<usize> = VecDeque::new();
     let mut visited:HashSet<usize> = HashSet::new();
-    let mut found_path:bool = false;
     let mut start_points:Vec<usize> = (0..n).collect();
-    if RAND_MODE {start_points.shuffle(&mut rand::thread_rng());}
+    let mut valid_paths:Vec<(f32, Vec<usize>)> = Vec::new();
+    if RAND_FAST_MODE {start_points.shuffle(&mut rand::thread_rng());}
     let mut action_count:i32 = 0;
     'pathfinder: for sp1 in start_points {
         deque.clear();
@@ -388,9 +370,12 @@ fn solve_greedy1(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> (f32, Vec
                         }
                     }
                     if deque.len() == n {
-                        found_path = true;
-                        if PRINT0 {println!("found solution");}
-                        break 'pathfinder;
+                        let tup:(f32, Vec<usize>) = (calculate_path_length(&deque.clone().into_iter().collect(), &ad), deque.clone().into_iter().collect());
+                        valid_paths.push(tup);
+                        if RAND_FAST_MODE {
+                            return valid_paths;
+                        }
+                        continue 'pathfinder;
                     }
                 }
             }
@@ -404,14 +389,13 @@ fn solve_greedy1(n:i32, ad:&Vec<Vec<f32>>, aa:&Vec<Vec<Vec<bool>>>) -> (f32, Vec
         if PRINT1 {println!("{:?}", deque);}
         if PRINT3 {println!("{} {} sp1 r", deque.len(), sp1);}
     }
-    let deque:Vec<usize> = deque.into_iter().collect();
-    let current_path_length = {if found_path {calculate_path_length(&deque, &ad)} else {0.0}};
-    (current_path_length, deque)
+    valid_paths
 }
 
 
-fn terminal_output(td:f32, stack:Vec<usize>, points:Vec<[f32;2]>) {
+fn _terminal_output(td:f32, stack:Vec<usize>, points:Vec<[f32;2]>) {
     // Prints the total distance and the index of the ordered points in the stack to the terminal.
+    // for debug
     println!("Distanz: {}", td);
     for point in stack {
         println!("{:?}, ", points[point as usize]);
