@@ -11,78 +11,96 @@ use std::time::{Duration, Instant};
 use std::env;
 
 
-const HALF_PI:f64 = PI/2.0; // 90°
-
 const PRINT_STEPS:bool = false; // print all steps 
-const PRINT_TIME_ALL:bool = false;
-const PRINT_TIME_TOTAL:bool = true;
-const CUT_ACTION_COUNT:bool = true; // whether or not nearly-infinite loop should be cutted of
+const PRINT_TIME_ALL:bool = true; // prints time for one testcase
+const PRINT_TIME_TOTAL:bool = true; // prints total time of all test
+const CUT_ACTION_COUNT:bool = true; // whether or not n! should be cutted of
+const DEBUG_MODE:bool = false; // enable debug mode to do all tests
 
 const MAX_ACTION_COUNT:i32 = 2_000; // limit for cut_action_count mode
 
+const HALF_PI:f64 = PI/2.0; // 90°
 
 fn main() {
-    let start_time_all:Instant = Instant::now(); // PRINT_TIME
+    let start_time_all:Instant = Instant::now();
     let args: Vec<String> = env::args().collect();
     let mut rand_mode:bool = true;
     let mut fast_mode:bool = false;
-    let path:String = args[1].clone();
-    println!("{:?}",args);
-    let name = path.rsplit("/").next().unwrap();
-    if name == "" {
-        println!("give the relative path to a testcase!");
-        return;
+    let mut paths_and_names:Vec<(String, String)> = Vec::new();
+    if !DEBUG_MODE {
+        let path:String = args[1].clone();
+        let name:String = args[1].rsplit("/").next().unwrap().to_string();
+        if name == "" {
+            println!("give the relative path to a testcase!");
+            return;
+        } else if name == "all" {
+            for i in 1..8 {
+                paths_and_names.push((format!("testcases/bsp{i}.txt"), format!("bsp{i}.txt")));
+            }
+        } else {
+            paths_and_names.push((path, name));
+        }
+    } else {
+        for i in 1..8 {
+            paths_and_names.push((format!("../testcases/bsp{i}.txt"), format!("bsp{i}.txt")));
+        }
+        // rand_mode = false;
+        // fast_mode = true;
     }
     if args.len() >= 3 {
-        rand_mode = args[2] != "";
+        rand_mode = args[2] != "n";
+        println!("rand mode: {}", rand_mode);
     }
     if args.len() >= 4 {
-        fast_mode = args[3] != "";
+        fast_mode = args[3] != "n";
+        println!("fast mode: {}", fast_mode);
     }
-    let start_time:Instant = Instant::now(); // PRINT_TIME
-    if PRINT_STEPS {println!("test: {}", path)}
-    let (n, points) = read_input(&path);
-    if PRINT_STEPS {println!("finish reading input");}
-    let all_distances:Vec<Vec<f64>> = get_all_distances(n, &points);
-    if PRINT_STEPS {println!("finish distances");}
-    let all_angles:Vec<Vec<Vec<bool>>> = get_all_angles(n, &all_distances);
-    if PRINT_STEPS {println!("finish angles");}
-    let mut valid_paths0:Vec<(f64, Vec<usize>)> = solve_greedy0(n, &all_distances, &all_angles, rand_mode, fast_mode);
-    let mut valid_paths1:Vec<(f64, Vec<usize>)> = solve_greedy1(n, &all_distances, &all_angles, rand_mode, fast_mode);
-    if PRINT_STEPS {println!("finish solve")}
-    valid_paths0.append(&mut valid_paths1);
-    if valid_paths0.len() == 0 {
-        println!("no possible paths found");
-        return;
-    }
-    let mut best_stack:&Vec<usize>;// = &valid_paths0[0].clone().1;
-    let mut best_distance:f64 = valid_paths0[0].0 + 1.0;
-    let stack_len:usize = valid_paths0[0].len();
-    for (td, stack) in &mut valid_paths0 {
-        opt0_create_circle(td, stack, &all_distances, &all_angles);
-        for i in 1..(stack_len-1) {
-            opt1_move_n_points(td, stack, &all_distances, &all_angles, i);
+    for (path, name) in paths_and_names {
+        let start_time:Instant = Instant::now();
+        if PRINT_STEPS {println!("test: {}", path)}
+        let (n, points) = read_input(path);
+        if PRINT_STEPS {println!("finish reading input");}
+        let all_distances:Vec<Vec<f64>> = get_all_distances(n, &points);
+        if PRINT_STEPS {println!("finish distances");}
+        let all_angles:Vec<Vec<Vec<bool>>> = get_all_angles(n, &all_distances);
+        if PRINT_STEPS {println!("finish angles");}
+        let mut valid_paths0:Vec<(f64, Vec<usize>)> = solve_greedy0(n, &all_distances, &all_angles, rand_mode, fast_mode);
+        let mut valid_paths1:Vec<(f64, Vec<usize>)> = solve_greedy1(n, &all_distances, &all_angles, rand_mode, fast_mode);
+        if PRINT_STEPS {println!("finish solve")}
+        valid_paths0.append(&mut valid_paths1);
+        if valid_paths0.len() == 0 {
+            println!("no possible paths found");
+            return;
         }
-        for i in 2..(stack_len+1) {
-            opt1_move_n_points(td, stack, &all_distances, &all_angles, stack_len-i);
+        let mut best_stack:&Vec<usize> = &valid_paths0[0].clone().1;
+        let mut best_distance:f64 = valid_paths0[0].0;
+        let stack_len:usize = best_stack.len();
+        for (td, stack) in &mut valid_paths0 {
+            opt0_create_circle(td, stack, &all_distances, &all_angles);
+            for i in 1..(stack_len-1) {
+                opt1_move_n_points(td, stack, &all_distances, &all_angles, i);
+            }
+            for i in 2..(stack_len+1) {
+                opt1_move_n_points(td, stack, &all_distances, &all_angles, stack_len-i);
+            }
+            if *td < best_distance {
+                best_distance = *td;
+                best_stack = stack;
+            }   
         }
-        if *td < best_distance {
-            best_distance = *td;
-            best_stack = stack;
-        }   
-    }
-    if PRINT_STEPS {println!("finish optimisation")}
-    output(best_distance, best_stack.clone(), points, name);
-    if PRINT_STEPS {println!("finish output")}
-    if PRINT_TIME_ALL {
-        let timedelta:Duration = start_time.elapsed();
-        let time:f64 = timedelta.as_secs_f64();
-        println!("Gesammte Zeit für den Test in Sekunden: {}\n", time);
-    }
-    if PRINT_TIME_TOTAL {
-        let timedelta:Duration = start_time_all.elapsed();
-        let time:f64 = timedelta.as_secs_f64();
-        println!("Zeit für alle Tests in Sekunden: {}", time);
+        if PRINT_STEPS {println!("finish optimisation")}
+        output(best_distance, best_stack.clone(), points, name);
+        if PRINT_STEPS {println!("finish output")}
+        if PRINT_TIME_ALL {
+            let timedelta:Duration = start_time.elapsed();
+            let time:f64 = timedelta.as_secs_f64();
+            println!("Gesammte Zeit für den Test in Sekunden: {}\n", time);
+        }
+        }
+        if PRINT_TIME_TOTAL {
+            let timedelta:Duration = start_time_all.elapsed();
+            let time:f64 = timedelta.as_secs_f64();
+            println!("Zeit für alle Tests in Sekunden: {}", time);
     }
 }
 
@@ -99,11 +117,10 @@ fn angle(d1:f64, d2:f64, d3:f64) -> bool {
     cosa.acos() >= HALF_PI
 }
 
-
-fn read_input(path: &String) -> (i32, Vec::<[f64; 2]>) {
+fn read_input(path: String) -> (i32, Vec::<[f64; 2]>) {
     let file:File = File::open(path).unwrap();
     let mut all_points:Vec<[f64; 2]> = Vec::<[f64; 2]>::new();
-    let reader = BufReader::new(file);
+    let reader:BufReader<File> = BufReader::new(file);
     let lines = reader.lines();
     let mut n: i32 = 0;
     for line in lines {
@@ -434,13 +451,18 @@ fn calculate_path_length(stack:&Vec<usize>, ad:&Vec<Vec<f64>>) -> f64 {
     total_distance
 }
 
-fn output(total_distance:f64, stack:Vec<usize>, points:Vec<[f64;2]>, name:&str) {
+fn output(total_distance:f64, stack:Vec<usize>, points:Vec<[f64;2]>, name:String) {
     let mut output:String = String::from(format!("{}\n", total_distance));
     for ind in stack {
         let [x, y] = points[ind];
         output.push_str(&format!("{}, {}\n", x, y));
     }
-    let path: String = format!("output/{}", name);
+    let path: String;
+    if !DEBUG_MODE {
+        path = format!("output/{}", name);
+    } else {
+        path = format!("../output/{}", name);
+    }
     let mut file = File::create(path).unwrap();
     file.write_all(output.as_bytes()).unwrap();
 }
@@ -486,34 +508,34 @@ fn opt0_create_circle(total_distance:&mut f64, stack:&mut Vec<usize>, ad:&Vec<Ve
 
 fn opt1_move_n_points(total_distance:&mut f64, stack:&mut Vec<usize>, ad:&Vec<Vec<f64>>, aa:&Vec<Vec<Vec<bool>>>, n:usize) {
     let last_distance:f64 = *total_distance; // keep track of the last total distance
-    let mut new_stack:Vec<usize> = stack.clone(); // create a new stack for the new solution
+    //let mut new_stack:Vec<usize> = stack.clone(); // create a new stack for the new solution
     // iterate over all possible points to remove from the stack
     'outer: for choosen_point in 0..(stack.len()+1-n) { 
         // remove a slice of n points
-        let mut slice:Vec<usize> = new_stack.splice(choosen_point..(choosen_point+n), std::iter::empty()).collect::<Vec<_>>();
+        let mut slice:Vec<usize> = stack.splice(choosen_point..(choosen_point+n), std::iter::empty()).collect::<Vec<_>>();
         // iterate over all possible locations to insert the removed points
-        for new_location in 0..(new_stack.len()+1) {
+        for new_location in 0..(stack.len()+1) {
             // try inserting the slice in the new location, and its reverse
             for _ in 0..2 {
                 // insert the removed points into the new position
-                new_stack.splice(new_location..new_location, slice);
+                stack.splice(new_location..new_location, slice);
                 // check if all angles are valid
-                if proove_all_angles(&new_stack, aa) {
-                    let distance = calculate_path_length(&new_stack, ad); //n
+                if proove_all_angles(&stack, aa) {
+                    let distance = calculate_path_length(&stack, ad); //n
                     // if the new path is shorter, update the total distance and the stack
                     if distance < *total_distance {
                         *total_distance = distance;
-                        *stack = new_stack.clone();
+                        //*stack = new_stack;
                         break 'outer;
                     }
                 }
                 // remove the inserted points from the stack and reverse them
-                slice = new_stack.splice(new_location..(new_location+n), std::iter::empty()).collect::<Vec<_>>();
+                slice = stack.splice(new_location..(new_location+n), std::iter::empty()).collect::<Vec<_>>();
                 slice.reverse();
             }
         }
         // insert the removed points back to their original position
-        new_stack.splice(choosen_point..choosen_point, slice);
+        stack.splice(choosen_point..choosen_point, slice);
     }
     // if the total distance was updated, repeat the optimization
     if last_distance != *total_distance {
