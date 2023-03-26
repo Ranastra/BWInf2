@@ -67,7 +67,7 @@ def print_distance_from_file(path):
 
 if __name__ == "__main__":
     # If there is exactly one command line argument, plot the solution
-    if len(argv) == 2:
+    if len(argv) == 2 and argv[1] != "all":
          # Extract the filename from the path and generate the output file path
         name = argv[1][::-1].split("/",maxsplit=1)[0][::-1]
         path = "output/" + name
@@ -77,4 +77,4 @@ if __name__ == "__main__":
     else:
         # Plot the solutions for all 7 test cases
         for i in range(1,8):
-            plot_path(f"output/test{i}.txt")
+            plot_path(f"output/bsp{i}.txt")
