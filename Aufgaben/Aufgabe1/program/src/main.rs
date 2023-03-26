@@ -15,7 +15,7 @@ const PRINT_STEPS:bool = false; // print all steps
 const PRINT_TIME_ALL:bool = true; // prints time for one testcase
 const PRINT_TIME_TOTAL:bool = true; // prints total time of all test
 const CUT_ACTION_COUNT:bool = true; // whether or not n! should be cutted of
-const DEBUG_MODE:bool = false; // enable debug mode to do all tests
+const DEBUG_MODE:bool = false; // enable debug mode to run with cargo
 
 const MAX_ACTION_COUNT:i32 = 2_000; // limit for cut_action_count mode
 
@@ -23,55 +23,66 @@ const HALF_PI:f64 = PI/2.0; // 90°
 
 fn main() {
     let start_time_all:Instant = Instant::now();
-    let args: Vec<String> = env::args().collect();
-    let mut rand_mode:bool = true;
-    let mut fast_mode:bool = false;
-    let mut paths_and_names:Vec<(String, String)> = Vec::new();
+    let args: Vec<String> = env::args().collect(); // from cl passed arguments
+    let mut rand_mode:bool = true; // if true the starting points of the paths are choosen at random 
+    let mut fast_mode:bool = false; // if true just one valid path will be optimized
+    let mut paths_and_names:Vec<(String, String)> = Vec::new(); // stores the names and paths of the testcases
     if !DEBUG_MODE {
+        // map parameters
         let path:String = args[1].clone();
         let name:String = args[1].rsplit("/").next().unwrap().to_string();
         if name == "" {
+            // quit if no testfile is given
             println!("give the relative path to a testcase!");
             return;
         } else if name == "all" {
+            // run for all testcases
             for i in 1..8 {
                 paths_and_names.push((format!("testcases/bsp{i}.txt"), format!("bsp{i}.txt")));
             }
         } else {
+            // run for specified testcase
             paths_and_names.push((path, name));
         }
     } else {
+        // test with cargo run
         for i in 1..8 {
             paths_and_names.push((format!("../testcases/bsp{i}.txt"), format!("bsp{i}.txt")));
         }
         // rand_mode = false;
         // fast_mode = true;
     }
-    if args.len() >= 3 {
-        rand_mode = args[2] != "n";
+    if args.len() >= 4 {
+        rand_mode = args[3] != "n";
         println!("rand mode: {}", rand_mode);
     }
-    if args.len() >= 4 {
-        fast_mode = args[3] != "n";
+    if args.len() >= 3 {
+        fast_mode = args[2] != "n";
         println!("fast mode: {}", fast_mode);
     }
     for (path, name) in paths_and_names {
         let start_time:Instant = Instant::now();
         if PRINT_STEPS {println!("test: {}", path)}
+        // read input
         let (n, points) = read_input(path);
         if PRINT_STEPS {println!("finish reading input");}
+        // calculate distance for all pairs of points
         let all_distances:Vec<Vec<f64>> = get_all_distances(n, &points);
         if PRINT_STEPS {println!("finish distances");}
+        // calculate all angles and validate them
         let all_angles:Vec<Vec<Vec<bool>>> = get_all_angles(n, &all_distances);
         if PRINT_STEPS {println!("finish angles");}
+        // get valid paths from both greedy methods
         let mut valid_paths0:Vec<(f64, Vec<usize>)> = solve_greedy0(n, &all_distances, &all_angles, rand_mode, fast_mode);
         let mut valid_paths1:Vec<(f64, Vec<usize>)> = solve_greedy1(n, &all_distances, &all_angles, rand_mode, fast_mode);
         if PRINT_STEPS {println!("finish solve")}
         valid_paths0.append(&mut valid_paths1);
-        if valid_paths0.len() == 0 {
+        // check if valid paths is not empty
+        if valid_paths0.is_empty() {
             println!("no possible paths found");
             return;
         }
+        // loop through all valid paths, optimize them and choose the one with shortes total distance
         let mut best_stack:&Vec<usize> = &valid_paths0[0].clone().1;
         let mut best_distance:f64 = valid_paths0[0].0;
         let stack_len:usize = best_stack.len();
@@ -89,6 +100,7 @@ fn main() {
             }   
         }
         if PRINT_STEPS {println!("finish optimisation")}
+        // output best path
         output(best_distance, best_stack.clone(), points, name);
         if PRINT_STEPS {println!("finish output")}
         if PRINT_TIME_ALL {
@@ -118,18 +130,21 @@ fn angle(d1:f64, d2:f64, d3:f64) -> bool {
 }
 
 fn read_input(path: String) -> (i32, Vec::<[f64; 2]>) {
+    // gets the content from a file at an absolute path
     let file:File = File::open(path).unwrap();
     let mut all_points:Vec<[f64; 2]> = Vec::<[f64; 2]>::new();
     let reader:BufReader<File> = BufReader::new(file);
     let lines = reader.lines();
     let mut n: i32 = 0;
+    // read and convert the koordinates
+    let mut x:f64;
+    let mut y:f64;
     for line in lines {
         let line:String = line.unwrap();
         let mut line2 = line.trim().split_whitespace();
-        let x:f64 = f64::from_str(line2.next().unwrap()).unwrap();
-        let y:f64 = f64::from_str(line2.next().unwrap()).unwrap();
-        let point: [f64; 2] = [x, y];
-        all_points.push(point);
+        x = f64::from_str(line2.next().unwrap()).unwrap();
+        y = f64::from_str(line2.next().unwrap()).unwrap();
+        all_points.push([x, y]);
         n +=1;
     };
     (n, all_points)
@@ -442,16 +457,15 @@ fn get_ordered_distances(distances:&Vec<f64>) -> Vec<usize> {
 
 fn calculate_path_length(stack:&Vec<usize>, ad:&Vec<Vec<f64>>) -> f64 {
     // calculates the total distance given the path and the all_distances map
-    //println!("{:?}", stack); //test
     let mut total_distance:f64 = 0.0;
     for i in 1..stack.len() as usize {
         total_distance += ad[stack[i-1]][stack[i]];
-        //println!("{}", ad[stack[i-1]][stack[i]]);
     }
     total_distance
 }
 
 fn output(total_distance:f64, stack:Vec<usize>, points:Vec<[f64;2]>, name:String) {
+    // outputs the solution to a file in the output folder
     let mut output:String = String::from(format!("{}\n", total_distance));
     for ind in stack {
         let [x, y] = points[ind];
@@ -508,7 +522,6 @@ fn opt0_create_circle(total_distance:&mut f64, stack:&mut Vec<usize>, ad:&Vec<Ve
 
 fn opt1_move_n_points(total_distance:&mut f64, stack:&mut Vec<usize>, ad:&Vec<Vec<f64>>, aa:&Vec<Vec<Vec<bool>>>, n:usize) {
     let last_distance:f64 = *total_distance; // keep track of the last total distance
-    //let mut new_stack:Vec<usize> = stack.clone(); // create a new stack for the new solution
     // iterate over all possible points to remove from the stack
     'outer: for choosen_point in 0..(stack.len()+1-n) { 
         // remove a slice of n points
@@ -521,7 +534,7 @@ fn opt1_move_n_points(total_distance:&mut f64, stack:&mut Vec<usize>, ad:&Vec<Ve
                 stack.splice(new_location..new_location, slice);
                 // check if all angles are valid
                 if proove_all_angles(&stack, aa) {
-                    let distance = calculate_path_length(&stack, ad); //n
+                    let distance = calculate_path_length(&stack, ad);
                     // if the new path is shorter, update the total distance and the stack
                     if distance < *total_distance {
                         *total_distance = distance;
