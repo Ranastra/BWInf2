@@ -21,8 +21,9 @@ def plot_path(path):
         plt.plot([xs[-1]], [[ys[-1]]], marker="o")
         # Plot the path points
         plt.plot(xs, ys, marker=".")
+        #plt.subplots()[0].suptitle(path)
         # Set the title of the plot to be the total distance of the path
-        plt.suptitle(str(distance))
+        plt.suptitle(f"{path}\ndistance: {distance}")
         # Show the plot
         plt.show()
 
