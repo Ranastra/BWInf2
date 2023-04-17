@@ -6,6 +6,7 @@ def plot_path(path):
     with open(path, "r") as file:
         # Read and process the contents of the file
         lines = [line.strip() for line in file.readlines()]
+        if len(lines) <= 1: return
         distance = lines[0] # Extract the distance value from the first line
         xs = []
         ys = []

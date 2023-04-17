@@ -8,15 +8,18 @@ def read(path:str) -> list[str]:
 
 def remove_random(testcase:list[str], n:int, slice_to_not_pick:str) -> list[str]:
     removed:list[list[int]] = []
-    count: int = 0
     slice_to_not_pick = slice_to_not_pick.replace(",", "")
-    while count < n:
-        rem = testcase.pop(randint(0, len(testcase)-(i+1)))
-        if rem != slice_to_not_pick:
-           removed.append(rem)
-           count += 1
-        else:
-            testcase.append(rem)
+    retry_count = 0
+    for _ in range(n):
+        rem = testcase.pop(randint(0, len(testcase)-1))
+        while rem == slice_to_not_pick:
+           retry_count += 1
+           if retry_count > 30:
+               print("skipped because not enogh slices")
+               return []
+           testcase.append(rem)
+           rem = testcase.pop(randint(0, len(testcase)-1))
+        removed.append(rem)
     print("removed:\n", removed)
     return removed
 
@@ -35,17 +38,17 @@ if __name__ == "__main__":
                 removed:list[str] = remove_random(testcase, n=int(argv[2]), slice_to_not_pick=slice_to_not_pick)
                 output(path=f"testcasesb/bsp{i}.txt", testcase=testcase)
         else:
-            testcase: list[str] = read(argv[1])
-            slice_to_not_pick: str = read(f"output/{testcase}")[0]
-            removed:list[str] = remove_random(f"testcases/{testcase}", n=int(argv[2]), slice_to_not_pick=slice_to_not_pick)
-            name:str = argv[1].split("/")[-1]
-            output(path=f"testcasesb/{name}", testcase=testcase)
+            print(f"argv[1]: {argv[1]}")
+            testcase: list[str] = read(f"testcases/{argv[1]}")
+            slice_to_not_pick: str = read(f"output/{argv[1]}")[0]
+            removed:list[str] = remove_random(testcase, n=int(argv[2]), slice_to_not_pick=slice_to_not_pick)
+            output(path=f"testcasesb/{argv[1]}", testcase=testcase)
     else:
         for i in range(1, 8):
             testcase: list[str] = read(f"testcases/bsp{i}.txt")
             slice_to_not_pick: str = read(f"output/bsp{i}.txt")[0]
             #print(testcase)
             removed:list[str] = remove_random(testcase, n=1, slice_to_not_pick=slice_to_not_pick)
-            print("removed:\n", removed)
+            #print("removed:\n", removed)
             output(path=f"testcasesb/bsp{i}.txt", testcase=testcase)
             # print(testcase)

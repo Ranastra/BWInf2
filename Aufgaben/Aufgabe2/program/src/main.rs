@@ -49,9 +49,10 @@ fn run_one(filename: &str) {
     solve(lowest, lowest_second, all_slices, &filename);
     if PRINT_TIME_ALL {
         let timedelta: Duration = start_time.elapsed();
-        println!("Zeit für den Tests: {:?}", timedelta);
+        println!("Time per test: {:?}", timedelta);
         let factor: i64 = (timedelta.as_nanos() as i64) / n;
-        println!("Nanosekunden pro Käsescheibe: {}", factor);
+        println!("number of slices: {}", n);
+        println!("Time per slice in nanosecs: {}", factor);
     }
 }
 

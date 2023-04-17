@@ -10,45 +10,40 @@ use std::env;
 const PRINT_STEPS:bool = true; // print all steps 
 const PRINT_TIME_ALL:bool = true; // prints time for one testcase
 const PRINT_TIME_TOTAL:bool = true; // prints total time of all test
-const DEBUG_MODE:bool = true; // enable debug mode to run with cargo
+const RUN_WITH_CARGO:bool = false; // enable debug mode to run with cargo
 const DISPLAY:bool = false; // display steps in pathfinder loop
+const CUT_ACTION_COUNT: bool = true; // cut action count to avoid ^^infinite loops^^
+const MAX_ACTION_COUNT: usize = 20_000; // max action count
 
 const HALF_PI:f64 = PI/2.0; // 90°
 
 fn main() {
     let start_time_all:Instant = Instant::now();
     let args: Vec<String> = env::args().collect(); // from cl passed arguments
-    let mut paths_and_names:Vec<(String, String)> = Vec::new(); // stores the names and paths of the testcases
-    if !DEBUG_MODE {
+    let mut names:Vec<String> = Vec::new(); // stores the names and paths of the testcases
+    if !RUN_WITH_CARGO {
         // map parameters
-        let path:String = args[1].clone();
-        let name:String = args[1].rsplit("/").next().unwrap().to_string();
-        if name == "" {
-            // quit if no testfile is given
-            println!("give the relative path to a testcase!");
-            return;
-        } else if name == "all" {
+        let name:String = args[1].clone();
+        if name == "all" {
             // run for all testcases
             for i in 1..8 {
-                paths_and_names.push((format!("testcases/bsp{i}.txt"), format!("bsp{i}.txt")));
+                names.push(format!("bsp{i}.txt"));
             }
         } else {
             // run for specified testcase
-            paths_and_names.push((path, name));
+            names.push(name);
         }
     } else {
         // test with cargo run
-        for i in 5..6 {
-            paths_and_names.push((format!("../testcases/bsp{i}.txt"), format!("bsp{i}.txt")));
+        for i in 1..8 {
+            names.push(format!("bsp{i}.txt"));
         }
-        // rand_mode = false;
-        // fast_mode = true;
     }
-    for (path, name) in paths_and_names {
+    for name in names {
         let start_time:Instant = Instant::now();
-        if PRINT_STEPS {println!("test: {}", path)}
+        if PRINT_STEPS {println!("test: {}", name)}
         // read input
-        let (n, points) = read_input(path);
+        let (n, points) = read_input(&name);
         if PRINT_STEPS {println!("finish reading input");}
         // convert to paths
         let converted_paths = convert(n as usize, points);
@@ -69,14 +64,12 @@ fn main() {
         if PRINT_STEPS {println!("finish output")}
         if PRINT_TIME_ALL {
             let timedelta:Duration = start_time.elapsed();
-            let time:f64 = timedelta.as_secs_f64();
-            println!("Gesammte Zeit für den Test in Sekunden: {}\n", time);
+            println!("Gesammte Zeit für den Test: {:?}\n", timedelta);
         }
     }
     if PRINT_TIME_TOTAL {
         let timedelta:Duration = start_time_all.elapsed();
-        let time:f64 = timedelta.as_secs_f64();
-        println!("Zeit für alle Tests in Sekunden: {}", time);
+        println!("Zeit für alle Tests: {:?}", timedelta);
     }
 }
 
@@ -288,7 +281,7 @@ impl Path {
             output.push_str(&format!("{}, {}\n", x, y));
         }
         let path: String;
-        if !DEBUG_MODE {
+        if !RUN_WITH_CARGO {
             path = format!("output/{}", name);
         } else {
             path = format!("../output/{}", name);
@@ -315,8 +308,14 @@ fn convert(n:usize, points:Vec<[f64; 2]>) -> HashMap<usize, Path> {
     paths
 }
 
-fn read_input(path: String) -> (i32, Vec<[f64; 2]>) {
+fn read_input(name: &String) -> (i32, Vec<[f64; 2]>) {
     // gets the content from a file at an absolute path
+    let path: String;
+    if RUN_WITH_CARGO {
+        path = format!("../testcases/{}", name);
+    } else {
+        path = format!("testcases/{}", name);
+    }
     let file:File = File::open(path).unwrap();
     let mut all_points:Vec<[f64; 2]> = Vec::new();
     let reader:BufReader<File> = BufReader::new(file);
@@ -342,6 +341,7 @@ fn solve(n:usize, mut paths:HashMap<usize, Path>) -> Option<Path> {
     let mut stack:Vec<Modification> = Vec::with_capacity(n);
     let mut last_choosen_mod:Modification = Modification::new_empty(); 
     let mut best_is_set:bool;
+    let mut action_count: usize = 0;
     loop {
         if DISPLAY {println!("");}
         if paths.len() == 1 {
@@ -384,6 +384,12 @@ fn solve(n:usize, mut paths:HashMap<usize, Path>) -> Option<Path> {
         } else {
             if stack.len() == 0 {
                 return None;
+            }
+            if CUT_ACTION_COUNT {
+                action_count += 1;
+                if action_count >= MAX_ACTION_COUNT {
+                    return None;
+                }
             }
             step_backwards = false;
             let last_modifikation = stack.pop().unwrap();

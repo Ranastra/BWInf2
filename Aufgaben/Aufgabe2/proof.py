@@ -5,7 +5,9 @@ from datetime import datetime as time
 def proof():
     for i in range(1,NUMBER_TESTCASES+1):
         l = []
-        with open(__file__[:-8] + "output/test" + str(i) + ".txt", encoding="utf-8-sig") as file:
+        path = f"{__file__[:-8]}output/bsp{i}.txt"
+        path2 = f"{__file__[:-8]}testcases/bsp{i}.txt"
+        with open(path, encoding="utf-8-sig") as file:
             lines = file.readlines()
             if not lines: continue
             start = lines[0]
@@ -34,8 +36,26 @@ def proof():
             if DISPLAY_MODE: print()
             print(i, dimensions)
 
+def proof2(i):
+    path = f"{__file__[:-8]}output/bsp{i}.txt"
+    path2 = f"{__file__[:-8]}testcases/bsp{i}.txt"
+    with open(path, "r") as file:
+        lines = file.readlines()
+    with open(path2) as file:
+        lines2 = file.readlines()[1:]
+    lines = [[int(num) for num in line.strip().split(", ")] for line in lines]
+    lines2 = [[int(num) for num in line.strip().split(" ")] for line in lines2]
+    for l in lines2:
+        try: 
+            lines.remove(l)
+        except ValueError:
+            print(l)
+    
+    
+
 
 if __name__ == "__main__":
-    start = time.now()
-    proof()
-    print(time.now() -start)
+    #start = time.now()
+    #proof()
+    #print(time.now() -start)
+    proof2(7)
